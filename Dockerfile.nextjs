@@ -1,0 +1,20 @@
+# Use an official Node.js runtime as the base image
+FROM node:21
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy package.json and package-lock.json to the container
+COPY frontend/package*.json ./
+
+# Install Next.js app dependencies
+RUN npm install
+
+ENV DOCKER_ENV="true"
+
+# Expose port 3000 for the Next.js app
+EXPOSE 3000
+
+# Start the Next.js app
+CMD ["npm", "run", "dev"]
+

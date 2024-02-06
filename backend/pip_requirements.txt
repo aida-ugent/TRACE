@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+numpy
+pandas
+scanpy
+annoy
+glasbey
+opentsne
+matplotlib

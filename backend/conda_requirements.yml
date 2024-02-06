@@ -1,0 +1,22 @@
+# tested with python 3.11.5
+# install e.g. with 
+# conda env create --prefix ./backend_env -f conda_requirements.yml
+# or
+# mamba env create --prefix ./backend_env -f conda_requirements.yml
+
+channels:
+  - defaults
+  - conda-forge
+
+dependencies:
+  - openssl
+  - fastapi
+  - uvicorn
+  - numpy
+  - pandas
+  - scanpy
+  - python-annoy
+  - matplotlib
+  - pip:
+    - glasbey
+    - opentsne

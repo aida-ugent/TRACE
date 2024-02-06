@@ -1,0 +1,24 @@
+# Use an official Python runtime as the base image
+FROM python:3.11
+
+# Set the working directory in the container
+WORKDIR /app
+RUN mkdir /data
+# Copy requirements.txt to the container
+RUN apt-get update && apt-get install -y \ 
+    build-essential \
+    gcc \
+    g++ \
+    openssl 
+
+COPY backend/pip_requirements.txt .
+
+# Install Python dependencies
+RUN python -m pip install --no-cache-dir -r pip_requirements.txt
+
+# Expose port for your Python backend (e.g., 8000)
+EXPOSE 8000
+
+# Start the Python backend
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
