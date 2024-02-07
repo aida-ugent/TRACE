@@ -46,7 +46,7 @@ export function Infobox(props) {
     useEffect(() => {
         setHoverFeatures([]);
         handleHoverNoteEnabled(false)
-    }, [pointColors])
+    }, [pointColorOptions])
 
     const handlePointOver = (pointId) => {
         setHoverState({
