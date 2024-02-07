@@ -1,0 +1,55 @@
+# Dataset configuration
+# - filepath (str): path to the h5ad file
+# - name (str): name of the dataset
+# - hd_metric (str): metric to use for the high-dimensional space [euclidean, angular]
+# - description (str): description of the dataset
+# - hd_data_key (str): key to access the high-dimensional data in adata.obsm (use "X" for adata.X)
+# - metadata_features (list[str], optional): list of metadata features to include in the dataset. Subset of adata.obsm_keys()
+
+GaussLine:
+  description: "Gaussian clusters shifted along a line from B\xF6hm et al. (2022)"
+  filepath: ../data/gauss_line/gauss_line.h5ad
+  hd_data_key: X
+  hd_metric: euclidean
+  name: GaussLine
+Human Immune:
+  description: Human Immune, Luecken et al. (2022)
+  filepath: ../data/immune/immune_with_embeddings_new.h5ad
+  hd_data_key: X_pca
+  hd_metric: euclidean
+  metadata_features:
+  - celltype
+  - batch
+  - chemistry
+  - species
+  - study
+  - tissue
+  name: Human Immune
+Mammoth:
+  description: Mammoth dataset from Wang et al. (2021)
+  filepath: ../data/mammoth/mammoth.h5ad
+  hd_data_key: X
+  hd_metric: euclidean
+  name: Mammoth
+Mouse CD45neg:
+  description: Mouse cells, CD45neg (from Guilliams M. et al. 2022)
+  filepath: ../data/mouse_fibro/CD45_quality.h5ad
+  hd_data_key: X_totalVI
+  hd_metric: angular
+  metadata_features:
+  - annot
+  - louvain
+  - type
+  - sampleName
+  name: Mouse CD45neg
+Mouse Fibroblasts:
+  description: Mouse cells, Fibroblasts subset (from Guilliams M. et al. 2022)
+  filepath: ../data/mouse_fibro/mouseFibroblasts_20231218_154655.h5ad
+  hd_data_key: X_totalVI
+  hd_metric: angular
+  metadata_features:
+  - annot
+  - louvain
+  - type
+  - sampleName
+  name: Mouse Fibroblasts

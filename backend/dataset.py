@@ -59,7 +59,7 @@ class Dataset:
         self.compute_quality(k=200, hd_metric=self.hd_metric)
         if self.get_quality_features() != old_quality_keys:
             print("Quality features changed. Saving dataset.")
-            self.save_adata(overwrite=True)
+            self.save_adata(overwrite=False)
 
         print(
             f"Loaded {self.name} data.\n"
@@ -178,7 +178,7 @@ class Dataset:
                 self.get_HD_data(),
                 metric=metric,
                 filepath=os.path.join(
-                    ".",
+                    os.path.dirname(self.filepath),
                     self.name.replace(" ", "_") + "_" + metric + "_annoy.ann",
                 ),
             )

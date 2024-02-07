@@ -3,7 +3,7 @@ from fastapi import FastAPI, Body, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
-from data_configs import dataset_configs
+from utils import get_available_datasets
 from dataset import Dataset
 from contextlib import asynccontextmanager
 import pandas as pd
@@ -15,6 +15,7 @@ import argparse
 
 API_PORT = 8000
 dataset = None
+dataset_configs = get_available_datasets("./data_configs.yaml")
 
 
 @asynccontextmanager

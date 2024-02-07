@@ -7,3 +7,4 @@ annoy
 glasbey
 opentsne
 matplotlib
+pyyaml

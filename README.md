@@ -19,7 +19,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 ### Option 2: Without Docker
 
 #### Required packages
-**Backend**: Install the required python packages for the backend, tested with Python 3.11 from `backend/pip_requirements.txt` or `backend/conda_requirements.yml`. 
+**Backend**: Install the required python packages for the backend, tested with Python 3.11 from `backend/pip_requirements.txt` or `backend/conda_requirements.yaml`. 
 
 **Frontend**: Install the packages in `frontend/package.json` using e.g. `npm install`.
 
@@ -70,7 +70,7 @@ The datasets have to be prepared as an [Anndata](https://anndata.readthedocs.io/
         }
         ```
 
-To include a dataset in the dashboard you need to extend the configuration in [data_configs.py](./backend/data_configs.py). For the Gaussian Line dataset the configuration would be:
+To include a dataset in the dashboard you need to extend the configuration in [data_configs.yaml](./backend/data_configs.yaml). For the Gaussian Line dataset the configuration would be:
 ```json
 "GaussLine": {
     "filepath": "../data/gauss_line/gauss_line.h5ad",
@@ -88,15 +88,15 @@ When the backend is started it will compute high-dimensional neighbors and quali
 * **neighborhood preservation** scores for `k = 50` and `k = 200` for each embedding. The values are computed as the size of the intersection between the sets of high-dimensional and low-dimensional neighbors, normalized by `k`.
 * **landmark distance correlation**: Sampling `n = 1000` landmark points using kmeanss++ (supports only Euclidean distance) from the high-dimensional data. We then compute the pairwise distances between all landmarks in high-dimensional space and each embedding and the rank correlation of their distance vectors. Points that are not landmark points are colored according to their nearest landmark point in the embedding. 
 
-The anndata object including the new quality scores will be saved automatically and can be used by updating the filepath in the config.
+The anndata object including the new quality scores will be saved as a new file and can be used by updating the filepath in the config.
 
 ### Gaussian Line 🟢 🟠 🟣
-A small example dataset that is included in the repository. UMAP and t-SNE are already precomputed, but the HD neighbors and quality measures are computed when the dashboard is loaded. This data will also be shown when the files for other dataset cannot be shown.
+A small example dataset that is included in the repository. UMAP and t-SNE are already precomputed, but the HD neighbors and quality measures are computed when the dashboard is loaded.
 
 ### Mammoth 🦣
 This dataset is from Wang et al. and can be downloaded from their [PaCMAP](https://github.com/YingfanWang/PaCMAP/blob/master/data/mammoth_3d_50k.json) repository. It then needs to be processed using the `mammoth.ipynb` notebook. 
 
-### Single-Cell Data 🐁
+### Single-Cell Mouse Data 🐁
 The processed dataset of gene expressions from [Guilliams et al.](https://pubmed.ncbi.nlm.nih.gov/35021063/) is not available online, please reach out if you are interested. A raw version is available under [GSE192742](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE192742).
 
 

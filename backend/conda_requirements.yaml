@@ -1,8 +1,8 @@
 # tested with python 3.11.5
 # install e.g. with 
-# conda env create --prefix ./backend_env -f conda_requirements.yml
+# conda env create --prefix ./backend_env -f conda_requirements.yaml
 # or
-# mamba env create --prefix ./backend_env -f conda_requirements.yml
+# mamba env create --prefix ./backend_env -f conda_requirements.yaml
 
 channels:
   - defaults
