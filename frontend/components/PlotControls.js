@@ -133,20 +133,28 @@ export function SettingsMenu(props) {
   }
 
 
-  const toggleOpacityByDensity = (newValue) => {
-    console.log(`toggle opacity by density: ${newValue}`)
-    setOpacityByDensity(newValue);
+  const toggleOpacityByDensity = (byDensity) => {
+    setOpacityByDensity(byDensity);
 
-    if (scatterplot != null) {
-      if (newValue) {
-        scatterplot.set({
-          "opacityBy": "density",
-        })
+    if (scatterplot !== null) {
+      if (byDensity) {
+        if (scatterplot.get('opacityBy') !== 'valueW') {
+          scatterplot.set({
+            "opacityBy": "density",
+          })
+        }
       } else {
-        scatterplot.set({
-          opacityBy: null,
-          opacity: opacity,
-        })
+        if (scatterplot.get('opacityBy') === 'valueW') {
+          scatterplot.set({
+            opacityBy: 'w',
+            opacity: [opacity, 1],
+          })
+        } else {
+          scatterplot.set({
+            opacityBy: null,
+            opacity: opacity,
+          })
+        }
       }
     }
   }
@@ -241,7 +249,7 @@ export function SettingsMenu(props) {
                               mb-2 mt-3 ${opacityByDensity ? 'accent-slate-100' : 'cursor-pointer'}`}
                   type="range"
                   min={0}
-                  max={0.4}
+                  max={0.6}
                   step={0.005}
                   defaultValue={0.2}
                   onChange={(event) => handleOpacitySelect(+event.target.value)}
