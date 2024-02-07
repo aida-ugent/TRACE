@@ -1,7 +1,8 @@
 # Dataset configuration
 # - filepath (str): path to the h5ad file
 # - name (str): name of the dataset
-# - hd_metric (str): metric to use for the high-dimensional space [euclidean, angular]
+# - hd_metric (str): metric to use for the high-dimensional space
+#   supported distance for approximate nearest neighbors are ["angular", "euclidean", "manhattan", "hamming", "dot"]
 # - description (str): description of the dataset
 # - hd_data_key (str): key to access the high-dimensional data in adata.obsm (use "X" for adata.X)
 # - metadata_features (list[str], optional): list of metadata features to include in the dataset. Subset of adata.obsm_keys()

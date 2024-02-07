@@ -50,7 +50,9 @@ class Dataset:
 
         self.rename_quality_column("quality qnx@50", "neighborhood preservation k=50")
         self.rename_quality_column("quality qnx@200", "neighborhood preservation k=200")
-        self.rename_quality_column("quality landmark corr", "landmark distance correlation")
+        self.rename_quality_column(
+            "quality landmark corr", "landmark distance correlation"
+        )
 
         # make sure the local quality is computed for all embeddings
         old_quality_keys = self.get_quality_features()
@@ -100,10 +102,13 @@ class Dataset:
                 self.adata.uns[name]["quality"] = {}
 
     def compute_landmark_correlation(self, hd_metric: str, recompute=False):
-        if "landmark distance correlation" not in self.get_quality_features() or recompute:
+        if (
+            "landmark distance correlation" not in self.get_quality_features()
+            or recompute
+        ):
             print("Computing landmark correlation")
             self.sample_HD_landmarks(hd_metric)
-            
+
     def rename_quality_column(self, old_name: str, new_name: str):
         """
         Rename a quality column in the dataset.
@@ -456,19 +461,33 @@ class Dataset:
                 "quality centroid_corr"
             ] = centroid_correlations
 
-    def sample_HD_landmarks(self, hd_metric: str):
+    def sample_HD_landmarks(
+        self,
+        hd_metric: str,
+        max_samples: int = 1000,
+        LD_landmark_neighbors: bool = True,
+    ):
+        """
+        Sample HD landmarks and compute distance correlations.
+
+        Args:
+            hd_metric (str): The metric to use for computing pairwise distances in HD space.
+            max_samples (int, optional): The maximum number of landmarks to sample. Defaults to 1000.
+            LD_landmark_neighbors (bool, optional): Flag indicating whether to find the nearest
+                landmark neighbor in LD space or HD space. Defaults to True.
+        """
         landmark_indices = centroid_correlation.sample_landmarks(
             data=self.get_HD_data(),
-            max_samples=1000,
+            max_samples=max_samples,
         )
         print(f"Sampled {len(landmark_indices)} landmarks")
         self.adata.uns["landmark_indices"] = landmark_indices
 
-        # compute correlations to ld centroids
         hd_landmark_distances = centroid_correlation.compute_pairwise_distance(
             X=self.get_HD_data()[landmark_indices], Y=None, metric=hd_metric
         )
         embedding_names = self.get_embedding_names()
+
         for name in embedding_names:
             ld_landmark_distances = centroid_correlation.compute_pairwise_distance(
                 X=self.adata.obsm[name][landmark_indices], Y=None, metric="euclidean"
@@ -478,26 +497,27 @@ class Dataset:
                 hd_landmark_distances, ld_landmark_distances
             )
 
-            # nearest neighbor index for LD data
-            #ld_nbr_index = NearestNeighbors(n_neighbors=2, algorithm="auto").fit(
-            #    self.adata.obsm[name][landmark_indices]
-            #)
-            
-            
-            #_, neighbors = ld_nbr_index.kneighbors(self.adata.obsm[name], n_neighbors=1)
-            
-            # nearest neighbor index for HD Data
-            ld_nbr_index = NearestNeighbors(n_neighbors=2, algorithm="auto", metric='cosine' if hd_metric == "angular" else hd_metric).fit(
-                self.get_HD_data()[landmark_indices, :]
-            )
-            _, neighbors = ld_nbr_index.kneighbors(self.get_HD_data(), n_neighbors=1)
+            if LD_landmark_neighbors:
+                # find the nearest landmark neighbor in LD space for all points
+                # alternative: find the nearest landmark neighbor in HD space for all points.
+                landmark_nbr_index = NearestNeighbors(
+                    n_neighbors=2, algorithm="auto", metric="euclidean"
+                ).fit(self.adata.obsm[name][landmark_indices])
+                _, neighbors = landmark_nbr_index.kneighbors(
+                    self.adata.obsm[name], n_neighbors=1
+                )
+            else:
+                # nearest neighbor index for HD Data
+                landmark_nbr_index = NearestNeighbors(
+                    n_neighbors=2,
+                    algorithm="auto",
+                    metric="cosine" if hd_metric == "angular" else hd_metric,
+                ).fit(self.get_HD_data()[landmark_indices, :])
+                _, neighbors = landmark_nbr_index.kneighbors(
+                    self.get_HD_data(), n_neighbors=1
+                )
 
             neighbors = neighbors.flatten()
-            # translate neighbor indices to landmark indices
-            # neighbors = landmark_indices[neighbors]
-
-            # check that neighbors of landmarks are landmarks themselves
-            # assert np.all(neighbors[landmark_indices] == landmark_indices)
 
             # place the remaining points at the location of their nearest neighbor
             prolongated_correlations = np.take(corr, neighbors, axis=0)

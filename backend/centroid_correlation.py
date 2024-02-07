@@ -39,7 +39,6 @@ def compute_centroid_distances(data: np.ndarray, labels: np.ndarray, metric: str
     """
     if metric == "angular":
         metric = "cosine"
-    assert metric in sklearn.metrics.pairwise.PAIRWISE_DISTANCE_FUNCTIONS
     centroids = get_cluster_centroids(data=data, labels=labels)
     centroid_distances = pairwise_distances(centroids, metric=metric)
     return centroid_distances
@@ -131,5 +130,4 @@ def sample_landmarks(data: np.ndarray, max_samples: int):
 def compute_pairwise_distance(X: np.ndarray, Y: np.ndarray, metric: str):
     if metric == "angular":
         metric = "cosine"
-    assert metric in sklearn.metrics.pairwise.PAIRWISE_DISTANCE_FUNCTIONS
     return pairwise_distances(X, Y, metric=metric)
