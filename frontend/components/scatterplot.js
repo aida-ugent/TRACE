@@ -14,9 +14,7 @@ import { getHDNeighbors } from "./api";
 
 // detault options
 let pointSizeInitial = 5;
-let maxNeighbors = 300;
-const metrics = ["angular", "euclidean"]
-const metricOptions = metrics.map(v => { return { value: v, label: v } })
+let maxNeighbors = 200;
 
 let filteredPoints = [];
 let numPoints;
@@ -180,6 +178,7 @@ export default function Scatterplot() {
     const [scatterplotState, setScatterplot] = useState(null);
     const [datasetInfo, setDatasetInfo] = useState("");
     const [selectedMetric, setMetric] = useState("angular");
+    const [metricOptions, setMetricOptions] = useState([]);
     const [datasetName, setDatasetName] = useState(null);
 
     const handleDatasetSelect = (newDatasetName) => {
@@ -205,6 +204,7 @@ export default function Scatterplot() {
                         response.json()
                             .then(res => {
                                 setMetric(res["hd_metric"]);
+                                setMetricOptions(res["metric_options"].map(v => { return { value: v, label: v } }));
                                 setDatasetInfo(res["dataset_info"]);
                                 setDatasetName(res["dataset_name"]);
                                 setEmbeddingOptions(res["embedding_options"])

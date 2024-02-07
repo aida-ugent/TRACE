@@ -199,6 +199,12 @@ class Dataset:
         for fpath in self.hd_annoy_filepath.values():
             if fpath is not None and os.path.isfile(fpath):
                 os.remove(fpath)
+                
+    def get_hd_metric_options(self):
+        if "hd_neighbors" in self.adata.uns.keys():
+            return list(self.adata.uns["hd_neighbors"].keys())
+        else:
+            return []
 
     def get_embedding_options(self):
         """

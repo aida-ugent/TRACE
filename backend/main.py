@@ -96,6 +96,7 @@ def loadDataset(datasetName: str):
     }
     return {
         "dataset_name": datasetName,
+        "metric_options": dataset.get_hd_metric_options(),
         "hd_metric": dataset.hd_metric,
         "dataset_info": dataset.description,
         "embedding_options": dataset.get_embedding_options(),
