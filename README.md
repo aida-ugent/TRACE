@@ -33,6 +33,8 @@ First, start the backend within the right python evironment:
 ```bash
 conda activate backend_env/
 python main.py
+# or
+python -m uvicorn main:app --reload
 ```
 
 Then start the frontend development server:
@@ -54,10 +56,10 @@ The datasets have to be prepared as an [Anndata](https://anndata.readthedocs.io/
 * `adata.obsm` low-dimensional embeddings, one entry for each embedding, e.g. `adata.obsm["t-SNE (exag. 5)"]` for a t-SNE embedding. 
 * `adata.uns` unstructured data:
 
-    * `adata.uns["methods"]`: a dictionary with DR methods as keys and a list of all **two-dimensional** embedding keys as value. For example:
+    * `adata.uns["methods"]`: a dictionary that structures all available embeddings into groups (exactly one level with keys and a list as values such as in the example). This defines which embeddings can be selected in the interface. For example one could group according to DR methods and and list all corresponding **two-dimensional** embedding keys in adata.obsm:
         ```json
         {
-            "t-SNE": ["t-SNE (exag. 5)", "t-SNE (exag. 1)"]
+            "t-SNE": ["t-SNE (exag. 5)", "t-SNE (exag. 1)"],
             "UMAP": ["UMAP 20", "UMAP 100"]
         }
         ```
@@ -65,7 +67,7 @@ The datasets have to be prepared as an [Anndata](https://anndata.readthedocs.io/
     * [optional] `adata.uns["t-SNE (exag. 5)"]`: dictionary with additional data for each embedding, such as **quality** scores or **parameters** used to obtain the embedding. For example:
         ```json
         {
-            "quality": {"qnx@50": [...], "qnx@200": [...]}
+            "quality": {"qnx@50": [...], "qnx@200": [...]},
             "parameters": {"perplexity": 100, "exaggeration": 5, "epochs": 750}
         }
         ```
