@@ -278,7 +278,7 @@ class Dataset:
             names.extend(embeddingNames)
         return names
 
-    def get_category_colors(self, fname):
+    def get_category_colors(self, fname, categories: list):
         """
         Get the colors associated with each category in the specified feature.
 
@@ -288,9 +288,6 @@ class Dataset:
         Returns:
             dict: A dictionary mapping each category to its corresponding color.
         """
-        categories = list(
-            self.adata.obs[fname].value_counts(ascending=False, sort=True).keys()
-        )
         if fname + "_colors" in self.adata.uns_keys():
             colors = self.adata.uns[fname + "_colors"][: len(categories)]
         else:

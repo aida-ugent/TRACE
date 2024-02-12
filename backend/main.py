@@ -47,8 +47,8 @@ class NeighborRequest(BaseModel):
     k: int
     points: List[int]
     hd_metric: str
-    
-    
+
+
 class FeatureList(BaseModel):
     feature_list: List[str]
 
@@ -151,7 +151,9 @@ async def getMetadataFeatures(featureList: FeatureList = Body(...)):
         elif feature in dataset.adata.obs_keys():
             result[feature] = dataset.adata.obs[feature].tolist()
         else:
-            raise ValueError(f"feature {feature} not in variable names or data dimensions.")
+            raise ValueError(
+                f"feature {feature} not in variable names or data dimensions."
+            )
     return result
 
 
@@ -212,20 +214,30 @@ async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = No
     elif fname in dataset.adata.obs_keys():
         fvalues = dataset.adata.obs[fname]
         fgroup = "metadata"
+        print(f"type of {fname} is {dataset.adata.obs[fname].dtype.name}")
 
-        if dataset.adata.obs[fname].dtype.name != "category":
+        if (
+            dataset.adata.obs[fname].dtype.name == "category"
+            or dataset.adata.obs[fname].dtype.name == "object"
+        ):
+            ftype = "categorical"
+            value_counts = list(fvalues.value_counts(ascending=False, sort=True).keys())
+
+            if len(value_counts) > 30:
+                print(f"{fname} contains too many unique values ({len(value_counts)})")
+                fvalues = encoded_fvalues = np.zeros((dataset.adata.n_obs,), dtype=int)
+                colors = {"too many values": "#444444"}
+                ftype = "categorical"
+                fgroup = "metadata"
+            else:
+                cat_dtype = CategoricalDtype(categories=value_counts)
+                encoded_fvalues = pd.Series(fvalues.values.tolist()).astype(cat_dtype)
+                encoded_fvalues = encoded_fvalues.cat.codes
+                colors = dataset.get_category_colors(fname, categories=value_counts)
+                range = [0, 1]
+        else:
             ftype = "continuous"
             colors = continuous_palettes.palettes["viridis"]
-
-        else:
-            ftype = "categorical"
-            cat_dtype = CategoricalDtype(
-                categories=list(fvalues.value_counts(ascending=False, sort=True).keys())
-            )
-            encoded_fvalues = pd.Series(fvalues.values.tolist()).astype(cat_dtype)
-            encoded_fvalues = encoded_fvalues.cat.codes
-            colors = dataset.get_category_colors(fname)
-            range = [0, 1]
 
     # features
     elif fname in dataset.adata.var.index:
@@ -412,6 +424,4 @@ if __name__ == "__main__":
     parser.add_argument("--host", type=str, default="127.0.0.1")
     args = parser.parse_args()
 
-    uvicorn.run(
-        "main:app", host=args.host, port=args.port, log_level="info"
-    )
+    uvicorn.run("main:app", host=args.host, port=args.port, log_level="info")
