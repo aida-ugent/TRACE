@@ -17,6 +17,8 @@ dependencies:
   - scanpy
   - python-annoy
   - matplotlib
+  - pyyaml
+  - pip
   - pip:
     - glasbey
     - opentsne
