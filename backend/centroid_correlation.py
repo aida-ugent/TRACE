@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
-import sklearn
 from scipy import stats
 from sklearn.metrics import pairwise_distances
 from sklearn.cluster import kmeans_plusplus
+from sklearn.neighbors import NearestNeighbors
 
 
 def get_cluster_centroids(data: np.ndarray, labels: np.ndarray):
@@ -122,7 +122,7 @@ def sample_landmarks(data: np.ndarray, max_samples: int):
     Returns:
         np.ndarray: sampled points
     """
-    max_samples = int(min(max_samples, data.shape[0] * 0.1))
+    max_samples = min(max_samples, data.shape[0])
     _, indices = kmeans_plusplus(data, n_clusters=max_samples, random_state=0)
     return np.asarray(indices)
 
@@ -131,3 +131,44 @@ def compute_pairwise_distance(X: np.ndarray, Y: np.ndarray, metric: str):
     if metric == "angular":
         metric = "cosine"
     return pairwise_distances(X, Y, metric=metric)
+
+
+def compute_landmark_correlation(
+    ld_data,
+    hd_data,
+    landmark_indices,
+    hd_landmark_distances,
+    LD_landmark_neighbors,
+    hd_metric,
+    ld_metric,
+):
+    ld_landmark_distances = compute_pairwise_distance(
+        X=ld_data[landmark_indices], Y=None, metric=ld_metric
+    )
+
+    corr = distance_correlation(hd_landmark_distances, ld_landmark_distances)
+
+    if LD_landmark_neighbors:
+        # find the nearest landmark neighbor in LD space for all points
+        # alternative: find the nearest landmark neighbor in HD space for all points.
+        landmark_nbr_index = NearestNeighbors(
+            n_neighbors=2, algorithm="auto", metric="euclidean"
+        ).fit(ld_data[landmark_indices])
+        neighbors = landmark_nbr_index.kneighbors(
+            ld_data, n_neighbors=1, return_distance=False
+        )
+    else:
+        # nearest neighbor index for HD Data
+        landmark_nbr_index = NearestNeighbors(
+            n_neighbors=2,
+            algorithm="auto",
+            metric="cosine" if hd_metric == "angular" else hd_metric,
+        ).fit(hd_data[landmark_indices, :])
+        neighbors = landmark_nbr_index.kneighbors(
+            hd_data, n_neighbors=1, return_distance=False
+        )
+
+    neighbors = neighbors.flatten()
+
+    # place the remaining points at the location of their nearest neighbor
+    return np.take(corr, neighbors, axis=0)

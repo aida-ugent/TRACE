@@ -5,7 +5,7 @@
 #   supported distance for approximate nearest neighbors are ["angular", "euclidean", "manhattan", "hamming", "dot"]
 # - description (str): description of the dataset
 # - hd_data_key (str): key to access the high-dimensional data in adata.obsm (use "X" for adata.X)
-# - metadata_features (list[str], optional): list of metadata features to include in the dataset. Subset of adata.obsm_keys()
+
 
 GaussLine:
   description: "Gaussian clusters shifted along a line from B\xF6hm et al. (2022)"
@@ -18,13 +18,6 @@ Human Immune:
   filepath: ../data/immune/immune_with_embeddings_new.h5ad
   hd_data_key: X_pca
   hd_metric: euclidean
-  metadata_features:
-  - celltype
-  - batch
-  - chemistry
-  - species
-  - study
-  - tissue
   name: Human Immune
 Mammoth:
   description: Mammoth dataset from Wang et al. (2021)
@@ -37,20 +30,10 @@ Mouse CD45neg:
   filepath: ../data/mouse_fibro/CD45_quality.h5ad
   hd_data_key: X_totalVI
   hd_metric: angular
-  metadata_features:
-  - annot
-  - louvain
-  - type
-  - sampleName
   name: Mouse CD45neg
 Mouse Fibroblasts:
   description: Mouse cells, Fibroblasts subset (from Guilliams M. et al. 2022)
-  filepath: ../data/mouse_fibro/mouseFibroblasts_20231218_154655.h5ad
+  filepath: ../data/mouse_fibro/Fibroblasts.h5ad
   hd_data_key: X_totalVI
   hd_metric: angular
-  metadata_features:
-  - annot
-  - louvain
-  - type
-  - sampleName
   name: Mouse Fibroblasts

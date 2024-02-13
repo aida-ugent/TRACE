@@ -139,7 +139,6 @@ async def getMetadataFeatures(featureList: FeatureList = Body(...)):
     Returns:
         dict: A dictionary containing the feature values for each feature in the list.
     """
-    print(f"datatype of feature list is {type(featureList)}, value {featureList}")
     features = featureList.feature_list
     result = {}
     for feature in features:
@@ -214,7 +213,6 @@ async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = No
     elif fname in dataset.adata.obs_keys():
         fvalues = dataset.adata.obs[fname]
         fgroup = "metadata"
-        print(f"type of {fname} is {dataset.adata.obs[fname].dtype.name}")
 
         if (
             dataset.adata.obs[fname].dtype.name == "category"
@@ -283,6 +281,10 @@ async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = No
 
     # encode values
     if ftype == "continuous":
+        # check for NaN values
+        if fvalues.isnull().values.any() or fvalues.isna().any():
+            print(f"{fname} contains NaN values. Replacing with mean.")
+            fvalues = fvalues.fillna(fvalues.mean())
         if range is None:
             range = [float(fvalues.min()), float(fvalues.max())]
         colorticks = np.linspace(

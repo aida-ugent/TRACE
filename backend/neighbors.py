@@ -27,6 +27,9 @@ def build_annoy_index(
     Returns:
         str: The filepath where the index is saved.
     """
+    if metric == "cosine":
+        metric = "angular"
+    
     if filepath is None:
         filepath = os.path.join(
             ".", f"annoy_{metric}_{time.strftime('%Y%m%d_%H%M%S')}.ann"
@@ -77,6 +80,8 @@ def get_nearest_neighbors(
             metric,
         )
     else:
+        if metric == "cosine":
+            metric = "angular"
         if filepath is None or not os.path.isfile(filepath):
             filepath = build_annoy_index(
                 data,
@@ -94,7 +99,7 @@ def get_nearest_neighbors(
             nbrs[0, :] = u.get_nns_by_item(indices[0], k + 1)[1:]
         else:
             assert k < data.shape[0]
-            for i, point in tqdm(enumerate(indices)):
+            for i, point in enumerate(tqdm(indices)):
                 nbrs[i, :] = u.get_nns_by_item(point, k + 1)[1:]
         return nbrs
 
@@ -119,7 +124,17 @@ def get_exact_neighbors(
     Returns:
         np.ndarray: The indices of the exact neighbors for the given input indices.
     """
-    supported_metrics = ['euclidean', 'l2', 'minkowski', 'p', 'manhattan', 'cityblock', 'l1', 'chebyshev', 'infinity']
+    supported_metrics = [
+        "euclidean",
+        "l2",
+        "minkowski",
+        "p",
+        "manhattan",
+        "cityblock",
+        "l1",
+        "chebyshev",
+        "infinity",
+    ]
     if metric not in supported_metrics:
         raise ValueError(f"Distance metric {metric} not supported by KDTree")
 
@@ -198,6 +213,45 @@ def neighborhood_preservation(
     return emb_quality
 
 
+def neighborhood_preservation_multi(
+    hd_neighbors: np.ndarray,
+    embedding: np.ndarray,
+    neighborhood_sizes: list[int],
+    ld_metric: str,
+):
+    """
+    Computes the neighborhood preservation for a low-dimensional embedding with multiple
+    neighborhood sizes k.
+
+    Parameters:
+        hd_neighbors (np.ndarray): The precomputed nearest neighbors for the high-dimensional dataset.
+        embedding (np.ndarray): The low-dimensional dataset.
+        neighborhood_sizes (list[int]): The list of neighborhood sizes to consider.
+        ld_metric (str): The distance metric to use for the low-dimensional dataset.
+    """
+    assert hd_neighbors.shape[1] >= max(
+        neighborhood_sizes
+    ), "hd_neighbors does not contain enough neighbors"
+
+    preservation = np.zeros((embedding.shape[0], len(neighborhood_sizes)))
+
+    emb_neighbors = get_exact_neighbors(
+        data=embedding,
+        indices=np.arange(embedding.shape[0]),
+        k=max(neighborhood_sizes),
+        metric=ld_metric,
+    )
+
+    for i, size in enumerate(neighborhood_sizes):
+        for j in range(embedding.shape[0]):
+            preservation[j, i] = (
+                np.intersect1d(hd_neighbors[j, :size], emb_neighbors[j, :size]).shape[0]
+                / size
+            )
+
+    return preservation
+
+
 def unstable_points(embA: np.ndarray, embB: np.ndarray, maxFraction: float, k: int):
     """
     Computes the unstable points between two sets of embeddings based on distance and neighborhood agreement.
@@ -239,13 +293,15 @@ def unstable_points(embA: np.ndarray, embB: np.ndarray, maxFraction: float, k: i
         neighborhood_agreement[i] = len(
             set(embAneighbors[i]).intersection(embBneighbors[i])
         )
-        
-    unstable_neighborhood_points = np.argpartition(neighborhood_agreement, kth=int(N * maxFraction))[
-        : int(N * maxFraction)
-    ]
+
+    unstable_neighborhood_points = np.argpartition(
+        neighborhood_agreement, kth=int(N * maxFraction)
+    )[: int(N * maxFraction)]
 
     # compute the intersection between distance and neighborhood points
     unstable_points = list(
-        set(unstable_distance_points).intersection(unstable_neighborhood_points.tolist())
+        set(unstable_distance_points).intersection(
+            unstable_neighborhood_points.tolist()
+        )
     )
     return unstable_points
