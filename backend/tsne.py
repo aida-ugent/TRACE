@@ -1,6 +1,7 @@
 import openTSNE
 import numpy as np
 import os
+import time
 import math
 import argparse
 import anndata as ad
@@ -128,13 +129,17 @@ def tsne_skrodzki(
     coarse_perp = math.ceil((data_size * sampling_frac) / 100)
     print(f"Computing affinities with perplexity {coarse_perp}...")
     # computing coarse embedding
+    start_aff = time.time()
     aff_coarse = openTSNE.affinity.PerplexityBasedNN(
         data[sample_ind, :],
         perplexity=coarse_perp,
+        method="annoy",
         n_jobs=8,
         random_state=rs,
         metric=hd_metric,
+        verbose=True,
     )
+    print("openTSNE: Coarse NN search", time.time() - start_aff, flush=True)
 
     # initialization
     if init is None:
@@ -143,38 +148,50 @@ def tsne_skrodzki(
     else:
         init = openTSNE.initialization.rescale(init[sample_ind, :])
 
-    coarse_embedding = openTSNE.TSNE(
+    coarse_embedding = openTSNE.TSNEEmbedding(
+        embedding=init,
+        affinities=aff_coarse,
         n_jobs=8,
         verbose=True,
-        early_exaggeration_iter=early_exag_iter,
-        exaggeration=exaggeration,
-        n_iter=n_iter,
         random_state=rs,
-    ).fit(affinities=aff_coarse, initialization=init)
+        negative_gradient_method="fft",
+    )
+    
+    coarse_embedding.optimize(early_exag_iter, exaggeration=12, inplace=True)
+    coarse_embedding.optimize(n_iter=n_iter, exaggeration=exaggeration, inplace=True)
+    print("openTSNE: Coarse embedding total", time.time() - start_aff, flush=True)
+
 
     # now need affinities for whole dataset
+    print(f"Computing affinities for whole dataset with perplexity {smoothing_perplexity}...")
+    aff_fine_start = time.time()
     aff_fine = openTSNE.affinity.PerplexityBasedNN(
         data,
         perplexity=smoothing_perplexity,
         n_jobs=8,
         random_state=rs,
         metric=hd_metric,
+        method="annoy"
     )
+    print("openTSNE: Fine NN search", time.time() - aff_fine_start, flush=True)
 
     fine_init = prolongate_embedding(
         data, coarse_embedding, sample_ind, aff_coarse.knn_index
     )
     fine_init = openTSNE.initialization.rescale(fine_init)
 
-    smooth_embedding = openTSNE.TSNE(
+    smooth_embedding = openTSNE.TSNEEmbedding(
+        embedding=fine_init,
+        affinities=aff_fine,
         n_jobs=8,
         verbose=True,
-        early_exaggeration_iter=0,
-        exaggeration=exaggeration,
-        n_iter=smoothing_iter,
         random_state=rs,
-    ).fit(affinities=aff_fine, initialization=fine_init)
+        negative_gradient_method="fft"
+    )
+    smooth_embedding.optimize(smoothing_iter, exaggeration=exaggeration, inplace=True)
+    print("openTSNE: Fine embedding total", time.time() - aff_fine_start, flush=True)
 
+    
     smooth_embedding = normalizeEmbedding(smooth_embedding)
 
     if save_fpath is not None:
