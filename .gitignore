@@ -18,6 +18,7 @@ data/**/*.json
 data/**/*.csv
 data/**/*.pkl
 data/**/*.zip
+data/**/*.loom
 **/*.ann
 
 # dependencies
