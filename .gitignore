@@ -19,6 +19,7 @@ data/**/*.csv
 data/**/*.pkl
 data/**/*.zip
 data/**/*.loom
+data/**/*.txt
 **/*.ann
 
 # dependencies

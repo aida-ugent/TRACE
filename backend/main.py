@@ -266,7 +266,7 @@ async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = No
         if range[0] >= 0 and range[1] <= 1:
             scale_continuous = False
 
-        colors = continuous_palettes.palettes["continuous_PRGn"]
+        colors = continuous_palettes.palettes["viridis"]
         ftype = "continuous"
         fgroup = "quality"
         print(f"quality score {fname} has mean {fvalues.mean()}")
@@ -282,7 +282,7 @@ async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = No
     # encode values
     if ftype == "continuous":
         # check for NaN values
-        if fvalues.isnull().values.any() or fvalues.isna().any():
+        if np.isnan(np.sum(fvalues)):
             print(f"{fname} contains NaN values. Replacing with mean.")
             fvalues = fvalues.fillna(fvalues.mean())
         if range is None:
