@@ -249,8 +249,8 @@ export function SettingsMenu(props) {
                               mb-2 mt-3 ${opacityByDensity ? 'accent-slate-100' : 'cursor-pointer'}`}
                   type="range"
                   min={0}
-                  max={0.6}
-                  step={0.005}
+                  max={0.7}
+                  step={0.001}
                   defaultValue={0.2}
                   onChange={(event) => handleOpacitySelect(+event.target.value)}
                   id="pointOpacitySlider"

@@ -86,7 +86,7 @@ class Dataset:
         if isinstance(adata, str):
             if os.path.isfile(adata):
                 self.filepath = adata
-                self.adata = ad.read_h5ad(adata)
+                self.adata = ad.read_h5ad(adata, backed="r")
             else:
                 raise FileNotFoundError(f"File {adata} not found.")
         elif isinstance(adata, ad.AnnData):

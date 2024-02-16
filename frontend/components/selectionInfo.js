@@ -33,7 +33,7 @@ export default function SelectionInfo(props) {
     }
 
     return (
-        <div className="select-none absolute bottom-2 rounded-lg right-2 w-fit bg-white/80 p-1 flex text-sm text-gray-500"
+        <div className="select-none absolute bottom-2 right-2 w-fit bg-white/80 p-1 flex text-sm text-gray-500"
         >
             {numSelected > 0 &&
                 <p>{numSelected} selected</p>
