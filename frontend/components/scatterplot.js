@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { DefaultButton, ResetButton, AsyncButton } from "./buttons";
 import Legend from "./legend";
 import { scatterplot } from "./canvas";
@@ -11,6 +11,9 @@ import CanvasWrapper from '@/components/canvas_wrapper'
 import { ReactSelect } from "./utils"
 import GroupedSelect from "./groupedSelect"
 import { getHDNeighbors } from "./api";
+import html2canvas from 'html2canvas';
+import downloadjs from 'downloadjs';
+
 
 // detault options
 let pointSizeInitial = 5;
@@ -79,7 +82,7 @@ const resetPointFilter = () => {
     filteredPoints = [...Array(numPoints).keys()];
 }
 
-const getPointColors = (embName, featureName) => {
+const getPointColors = (embName, featureName, setBackendStatus = () => { }) => {
     var fetchStr = `/backend/pointColor/${featureName}?embeddingName=${embName}`;
 
     if (scatterplot != null) {
@@ -88,11 +91,12 @@ const getPointColors = (embName, featureName) => {
             fetchStr = `/backend/pointColor/${featureName}?embeddingName=${embName}&selectedPoint=${selected[0]}`;
         }
     }
-
+    setBackendStatus({ "loading": true, "message": `Fetching ${featureName}...` });
     return new Promise((resolve, reject) => {
         fetch(fetchStr)
             .then(res => res.json())
             .then(res => {
+                setBackendStatus({ "loading": false, "message": "" });
                 resolve(res)
             })
     })
@@ -105,9 +109,13 @@ export const isSameElements = (a, b) => {
     return b.every((value) => aSet.has(value));
 };
 
-const showEmbedding = (embedding, pointColor, opacities, useTransition = true, preventFilterReset = true, opacityBy = null) => {
+function showEmbedding({
+    embedding, pointColor, opacities, useTransition = true,
+    preventFilterReset = true, opacityBy = null, setLoadingFn = null }) {
     let cview = scatterplot.get('cameraView');
     if (!preventFilterReset) resetPointFilter();
+
+    if (setLoadingFn != null) setLoadingFn(false);
 
     scatterplot
         .draw(
@@ -137,11 +145,13 @@ const showEmbedding = (embedding, pointColor, opacities, useTransition = true, p
 }
 
 
-const fetchEmbedding = (embName) => {
+const fetchEmbedding = (embName, setBackendStatus = () => { }) => {
+    setBackendStatus({ "loading": true, "message": `Fetching ${embName}...` });
     return new Promise((resolve, reject) => {
         fetch(`/backend/embedding?embName=${embName}`)
             .then(res => res.json())
             .then(res => {
+                setBackendStatus({ "loading": false, "message": "" });
                 resolve(res)
             })
     })
@@ -152,6 +162,7 @@ export default function Scatterplot() {
     const [isLoading, setIsLoading] = useState(true);
     const [loadingMessage, setLoadingMessage] = useState("");
     const [isLoadingData, setIsLoadingData] = useState(false);
+    const [backendStatus, setBackendStatus] = useState({ "loading": false, "message": "" });
     const [isError, setIsError] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
@@ -180,6 +191,20 @@ export default function Scatterplot() {
     const [selectedMetric, setMetric] = useState("angular");
     const [metricOptions, setMetricOptions] = useState([]);
     const [datasetName, setDatasetName] = useState(null);
+
+    const printCanvasRef = useRef(null);
+
+    const handleScreenshot = () => {
+        const element = printCanvasRef.current;
+        // const element = document.querySelector<HTMLElement>('.canvas-element');
+        console.log(`screenshot of ${element}`)
+        if (element == null) return;
+        html2canvas(element)
+            .then((canvas) => {
+                const img = canvas.toDataURL('image/png', 1.0)
+                downloadjs(img, 'trace_screenshot.png', 'image/png');
+            })
+    };
 
     const handleDatasetSelect = (newDatasetName) => {
         console.log(`handleDatasetSelect ${newDatasetName}`)
@@ -268,11 +293,17 @@ export default function Scatterplot() {
 
     const handlePointColorSelect = (newPointColor) => {
         console.log(`handlePointColorSelect ${newPointColor}`)
-        setSelectedPointColor(newPointColor);
-        getPointColors(embeddingName, newPointColor)
+        getPointColors(embeddingName, newPointColor, setBackendStatus)
             .then((res) => {
+                setSelectedPointColor(newPointColor);
                 setPointColors(res);
-                showEmbedding(activeEmbedding, res, opacities, false, false);
+                showEmbedding({
+                    embedding: activeEmbedding,
+                    pointColor: res,
+                    opacities: opacities,
+                    useTransition: false,
+                    preventFilterReset: false
+                });
             })
     }
 
@@ -283,7 +314,14 @@ export default function Scatterplot() {
                 getHDNeighbors(selectedPoints, kNeighbors, metric)
                     .then((binary_neighbors) => {
                         setOpacities(binary_neighbors);
-                        showEmbedding(activeEmbedding, pointColors, binary_neighbors, false, true, "w");
+                        showEmbedding({
+                            embedding: activeEmbedding,
+                            pointColor: pointColors,
+                            opacities: binary_neighbors,
+                            useTransition: false,
+                            preventFilterReset: true,
+                            opacityBy: "w"
+                        });
                         resolve(true);
                     })
             } else {
@@ -310,23 +348,33 @@ export default function Scatterplot() {
     }
 
     const handleEmbeddingSelect = (newEmbeddingName) => {
-        setEmbeddingName(newEmbeddingName);
-        fetchEmbedding(newEmbeddingName)
+        setLoadingMessage(`Fetching ${newEmbeddingName} embedding...`);
+
+        fetchEmbedding(newEmbeddingName, setBackendStatus)
             .then(newEmbedding => {
                 setActiveEmbedding(newEmbedding);
+                setEmbeddingName(newEmbeddingName);
 
                 if (pointColors["group"] === "quality") {
                     // pointColor was quality of old embedding ... recompute
-                    getPointColors(newEmbeddingName, selectedPointColor)
+                    getPointColors(newEmbeddingName, selectedPointColor, setBackendStatus)
                         .then((res) => {
                             if ("none" in res["colorMap"]) {
                                 setSelectedPointColor("none");
                             }
                             setPointColors(res);
-                            showEmbedding(newEmbedding, res, opacities);
+                            showEmbedding({
+                                embedding: newEmbedding,
+                                pointColor: res,
+                                opacities: opacities,
+                            });
                         })
                 } else {
-                    showEmbedding(newEmbedding, pointColors, opacities);
+                    showEmbedding({
+                        embedding: newEmbedding,
+                        pointColor: pointColors,
+                        opacities: opacities,
+                    });
                 }
             })
     }
@@ -354,7 +402,13 @@ export default function Scatterplot() {
     useEffect(() => {
         if (scatterLoaded && !isLoading && !isLoadingData) {
             console.log(`drawing initial embedding ${embeddingName}`)
-            showEmbedding(activeEmbedding, pointColors, opacities, false, false);
+            showEmbedding({
+                embedding: activeEmbedding,
+                pointColor: pointColors,
+                opacities: opacities,
+                useTransition: false,
+                preventFilterReset: false
+            });
             scatterplot.deselect();
             resetOpacityHandler();
         }
@@ -385,10 +439,13 @@ export default function Scatterplot() {
         return (
             <>
                 <div className="flex-grow h-screen max-h-screen bg-white relative min-w-[400px]">
-                    <CanvasWrapper setScatterLoaded={setScatterLoaded} setScatterplot={setScatterplot} />
+                    <div ref={printCanvasRef} className="w-full h-full"><CanvasWrapper 
+                        setScatterLoaded={setScatterLoaded} setScatterplot={setScatterplot} /></div>
                     <div className="absolute w-full flex flex-wrap top-0 pt-1 px-1 items-center display-block justify-between">
                         <ResetButton onClick={resetZoomHandler} />
-
+                        <DefaultButton onClick={handleScreenshot}>
+                            <a href="#" onClick={handleScreenshot}>Screenshot</a>
+                        </DefaultButton>
                         {/* Embedding method */}
                         <div className="flex items-center p-2 justify-between">
                             <button
@@ -416,6 +473,18 @@ export default function Scatterplot() {
                             </button>
                         </div>
                         <div style={{ visibility: 'hidden' }} />
+                    </div>
+                    {/* Small indicator to show when data is being loaded from the backend. */}
+                    <div
+                        role="status"
+                        className="absolute bottom-10 right-3 w-6 h-6 rounded-full 
+                        bg-opacity-100 flex justify-center items-center"
+                        style={{ visibility: backendStatus.loading ? "visible" : "hidden" }}>
+                        <svg aria-hidden="true" className="w-6 h-6 text-gray-200 animate-spin fill-yellow-500"
+                            viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor" />
+                            <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill" />
+                        </svg>
                     </div>
                     <SelectionInfo scatterplot={scatterplotState} numPoints={numPoints} datasetInfo={datasetInfo} />
                 </div>
