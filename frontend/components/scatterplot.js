@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useState, useEffect, useRef } from "react";
-import { DefaultButton, ResetButton, AsyncButton } from "./buttons";
+import { DefaultButton, ResetButton, AsyncButton, ScreenshotButton } from "./buttons";
 import Legend from "./legend";
 import { scatterplot } from "./canvas";
 import { SettingsMenu } from "./PlotControls"
@@ -13,6 +13,7 @@ import GroupedSelect from "./groupedSelect"
 import { getHDNeighbors } from "./api";
 import html2canvas from 'html2canvas';
 import downloadjs from 'downloadjs';
+import { saveAsPng } from './utils';
 
 
 // detault options
@@ -193,18 +194,6 @@ export default function Scatterplot() {
     const [datasetName, setDatasetName] = useState(null);
 
     const printCanvasRef = useRef(null);
-
-    const handleScreenshot = () => {
-        const element = printCanvasRef.current;
-        // const element = document.querySelector<HTMLElement>('.canvas-element');
-        console.log(`screenshot of ${element}`)
-        if (element == null) return;
-        html2canvas(element)
-            .then((canvas) => {
-                const img = canvas.toDataURL('image/png', 1.0)
-                downloadjs(img, 'trace_screenshot.png', 'image/png');
-            })
-    };
 
     const handleDatasetSelect = (newDatasetName) => {
         console.log(`handleDatasetSelect ${newDatasetName}`)
@@ -442,10 +431,10 @@ export default function Scatterplot() {
                     <div ref={printCanvasRef} className="w-full h-full"><CanvasWrapper 
                         setScatterLoaded={setScatterLoaded} setScatterplot={setScatterplot} /></div>
                     <div className="absolute w-full flex flex-wrap top-0 pt-1 px-1 items-center display-block justify-between">
+                        <div className="flex items-left">
+                        <ScreenshotButton onClick={() => saveAsPng(scatterplot, `${datasetName}_${embeddingName}_scatter.png`)} />
                         <ResetButton onClick={resetZoomHandler} />
-                        <DefaultButton onClick={handleScreenshot}>
-                            <a href="#" onClick={handleScreenshot}>Screenshot</a>
-                        </DefaultButton>
+                        </div>
                         {/* Embedding method */}
                         <div className="flex items-center p-2 justify-between">
                             <button

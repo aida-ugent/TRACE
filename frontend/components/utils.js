@@ -1,6 +1,53 @@
 import { Component, useState } from 'react';
 import Select from 'react-select'
 
+// from https://github.com/flekschas/regl-scatterplot/blob/39d353d5cf0f0e37f821c498322773989a1f5d1d/example/utils.js#L19
+export function downloadBlob(blob, name = 'file.txt') {
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = name;
+
+  document.body.appendChild(link);
+
+  link.dispatchEvent(
+    new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+    })
+  );
+
+  document.body.removeChild(link);
+}
+
+function getCanvasWithBackground(scatterplot, bgColor) {
+  const canvas = scatterplot.get('canvas');
+  var width = canvas.width;
+  var height = canvas.height;
+
+  const combinedCanvas = document.createElement("canvas");
+  combinedCanvas.width = width;
+  combinedCanvas.height = height;
+
+  const combinedCtx = combinedCanvas.getContext('2d');
+  combinedCtx.fillStyle = bgColor;
+  combinedCtx.fillRect(0, 0, width, height);
+  combinedCtx.drawImage(canvas, 0, 0, width, height);
+  return combinedCanvas;
+}
+
+// from https://github.com/flekschas/regl-scatterplot/blob/39d353d5cf0f0e37f821c498322773989a1f5d1d/example/utils.js#L19
+export function saveAsPng(scatterplot, filename='scatter.png') {
+  const imageObject = new Image();
+  imageObject.onload = () => {
+    getCanvasWithBackground(scatterplot, '#ffffff').toBlob((blob) => {
+      downloadBlob(blob, filename);
+    });
+  };
+  imageObject.src = scatterplot.get('canvas').toDataURL('image/png', 1.0);
+}
+
+
 
 class NamedSlider extends Component {
   constructor(props) {
