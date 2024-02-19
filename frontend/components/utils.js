@@ -1,6 +1,13 @@
 import { Component, useState } from 'react';
 import Select from 'react-select'
 
+export function getPointSize(numPoints) {
+  // point size depending on number of points
+  // between [0.1, 10]
+  return Math.min(10, Math.max(0.1, 20 * Math.exp(-0.458145 * Math.log10(numPoints))));
+}
+
+
 // from https://github.com/flekschas/regl-scatterplot/blob/39d353d5cf0f0e37f821c498322773989a1f5d1d/example/utils.js#L19
 export function downloadBlob(blob, name = 'file.txt') {
   const link = document.createElement('a');

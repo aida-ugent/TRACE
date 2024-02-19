@@ -25,10 +25,8 @@ export function Canvas({ data, setScatterLoaded, setScatterplot}) {
             lassoColor: [.3, .3, .3, .7],
             lassoMinDelay: 0,
             lassoMinDist: 1,
-            // This will keep the drawn lasso until the selected points are deselected
-            //lassoClearEvent: 'deselect',
             keyMap: { ctrl: 'merge', shift: 'lasso', alt: 'rotate' },
-            showReticle: false,
+            showReticle: true,
             reticleColor: [.3, .3, .3, 0.66],
             cameraDistance: 1.2,
             backgroundColor: '#ffffff',

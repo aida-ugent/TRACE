@@ -40,7 +40,7 @@ export default function Legend({ colormap, title, filter, unfilter, visibility }
     } else {
         return (
             <>
-                <div className={visibility + " flex flex-col select-none w-fit max-w-[220px] overflow-auto bg-white/0 rounded-lg bg-clip-border mt-1 px-2 pt-1 pb-2"}>
+                <div className={visibility + " flex flex-col select-none w-fit max-w-[220px] overflow-auto bg-white/80 rounded-lg bg-clip-border mt-1 px-2 pt-1 pb-2"}>
                     <h4>{title}</h4>
                     <ul className=" min-w-fit h-fit">
                         {items.map((name, index) =>

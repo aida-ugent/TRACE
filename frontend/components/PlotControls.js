@@ -1,5 +1,5 @@
 import { useState } from "react";
-import NamedSlider, { ReactSelect, Slider } from "./utils";
+import { ReactSelect } from "./utils";
 import { SettingsButton, ChevronRightButton, AsyncButton, DefaultButton } from "./buttons";
 import { Switch } from '@headlessui/react'
 import { Infobox } from "./infobox";
@@ -107,9 +107,10 @@ export function SettingsMenu(props) {
     scatterplot,
     selectedPointColor,
     pointColors,
-    pointSizeInitial,
     pointColorOptions,
     pointColorOnChange,
+    pointSize,
+    setPointSize,
     setLegendVisibility,
     legendVisibility,
     kNeighbors,
@@ -123,7 +124,6 @@ export function SettingsMenu(props) {
     children } = props
 
   const [visibility, setVisibility] = useState('visible')
-  const [selectedPointSize, setPointSize] = useState(pointSizeInitial);
   const [unstablePointFraction, setUnstablePointFraction] = useState(0.1);
   const [opacityByDensity, setOpacityByDensity] = useState(true);
   const [opacity, setOpacity] = useState(0.2);
@@ -131,7 +131,6 @@ export function SettingsMenu(props) {
   const toggleVisibility = () => {
     if (visibility == "visible") setVisibility("hidden"); else setVisibility("visible");
   }
-
 
   const toggleOpacityByDensity = (byDensity) => {
     setOpacityByDensity(byDensity);
@@ -177,17 +176,21 @@ export function SettingsMenu(props) {
   }
 
   const handleOpacitySelect = (opacity) => {
-    setOpacity(opacity);
+    if (opacity < 0) {
+      opacity = 0;
+    }
+    const scaledOpacity = Math.pow(opacity, 3);
+    setOpacity(scaledOpacity);
 
     if (scatterplot.get('opacityBy') == 'valueW') {
       scatterplot.set({
         opacityBy: 'w',
-        opacity: [opacity, 1],
+        opacity: [scaledOpacity, 1],
       })
     } else {
       scatterplot.set({
         opacityBy: null,
-        opacity: opacity,
+        opacity: scaledOpacity,
       })
     }
   }
@@ -225,10 +228,11 @@ export function SettingsMenu(props) {
                   className="transparent h-[2px] cursor-pointer appearance-none 
                 border-transparent bg-neutral-300 mb-2 mt-3"
                   type="range"
-                  min={1}
+                  min={0.1}
                   max={10}
-                  step={1}
-                  defaultValue={selectedPointSize}
+                  step={0.1}
+                  value={pointSize}
+                  //defaultValue={pointSize}
                   onChange={(event) => handlePointSizeSelect(+event.target.value)}
                   id="pointSizeSlider" />
               </div>
@@ -249,7 +253,7 @@ export function SettingsMenu(props) {
                               mb-2 mt-3 ${opacityByDensity ? 'accent-slate-100' : 'cursor-pointer'}`}
                   type="range"
                   min={0}
-                  max={0.7}
+                  max={1}
                   step={0.001}
                   defaultValue={0.2}
                   onChange={(event) => handleOpacitySelect(+event.target.value)}

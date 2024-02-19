@@ -8,7 +8,7 @@ import { SettingsMenu } from "./PlotControls"
 import SelectionInfo from "./selectionInfo";
 import { Colorbar } from "./colorbar";
 import CanvasWrapper from '@/components/canvas_wrapper'
-import { ReactSelect } from "./utils"
+import { ReactSelect, getPointSize } from "./utils"
 import GroupedSelect from "./groupedSelect"
 import { getHDNeighbors } from "./api";
 import html2canvas from 'html2canvas';
@@ -16,8 +16,7 @@ import downloadjs from 'downloadjs';
 import { saveAsPng } from './utils';
 
 
-// detault options
-let pointSizeInitial = 5;
+// default options
 let maxNeighbors = 200;
 
 let filteredPoints = [];
@@ -112,12 +111,14 @@ export const isSameElements = (a, b) => {
 
 function showEmbedding({
     embedding, pointColor, opacities, useTransition = true,
-    preventFilterReset = true, opacityBy = null, setLoadingFn = null }) {
+    preventFilterReset = true, opacityBy = null, setLoadingFn = null,
+    opacityValues = null, pointSize = null }) {
     let cview = scatterplot.get('cameraView');
     if (!preventFilterReset) resetPointFilter();
 
     if (setLoadingFn != null) setLoadingFn(false);
 
+    console.log(`opacityBy: ${scatterplot.get('opacityBy')}, opacity ${scatterplot.get('opacity')}`)
     scatterplot
         .draw(
             {
@@ -139,7 +140,8 @@ function showEmbedding({
                 cameraView: cview,
                 pointColor: Object.values(pointColor["colorMap"]),
                 opacityBy: opacityBy != null ? opacityBy : scatterplot.get('opacityBy'),
-                opacity: [0.03, 1],
+                opacity: opacityValues != null ? opacityValues : scatterplot.get('opacity'),
+                pointSize: pointSize != null ? pointSize : scatterplot.get('pointSize'),
                 //pointColorActive: "#ffba08", //"#55308d"
             })
         })
@@ -185,6 +187,7 @@ export default function Scatterplot() {
             "group": "metadata"
         }
     );
+    const [pointSize, setPointSize] = useState(5);
     const [opacities, setOpacities] = useState(null);
     const [scatterLoaded, setScatterLoaded] = useState(false);
     const [scatterplotState, setScatterplot] = useState(null);
@@ -248,6 +251,7 @@ export default function Scatterplot() {
                                         setOpacities(new Array(numPoints).fill(0));
                                         console.log(`number of points ${numPoints}`)
                                         setPointColors(pointColors);
+                                        setPointSize(getPointSize(numPoints));
                                         console.log("Finished loading data")
                                         setLoadingFunction(false);
                                         setLoadingMessage("");
@@ -309,7 +313,8 @@ export default function Scatterplot() {
                             opacities: binary_neighbors,
                             useTransition: false,
                             preventFilterReset: true,
-                            opacityBy: "w"
+                            opacityBy: "w",
+                            opacityValues: [0.03, 1]
                         });
                         resolve(true);
                     })
@@ -395,6 +400,7 @@ export default function Scatterplot() {
                 embedding: activeEmbedding,
                 pointColor: pointColors,
                 opacities: opacities,
+                pointSize: pointSize,
                 useTransition: false,
                 preventFilterReset: false
             });
@@ -428,12 +434,12 @@ export default function Scatterplot() {
         return (
             <>
                 <div className="flex-grow h-screen max-h-screen bg-white relative min-w-[400px]">
-                    <div ref={printCanvasRef} className="w-full h-full"><CanvasWrapper 
+                    <div ref={printCanvasRef} className="w-full h-full"><CanvasWrapper
                         setScatterLoaded={setScatterLoaded} setScatterplot={setScatterplot} /></div>
                     <div className="absolute w-full flex flex-wrap top-0 pt-1 px-1 items-center display-block justify-between">
                         <div className="flex items-left">
-                        <ScreenshotButton onClick={() => saveAsPng(scatterplot, `${datasetName}_${embeddingName}_scatter.png`)} />
-                        <ResetButton onClick={resetZoomHandler} />
+                            <ScreenshotButton onClick={() => saveAsPng(scatterplot, `${datasetName}_${embeddingName}_scatter.png`)} />
+                            <ResetButton onClick={resetZoomHandler} />
                         </div>
                         {/* Embedding method */}
                         <div className="flex items-center p-2 justify-between">
@@ -481,9 +487,10 @@ export default function Scatterplot() {
                     scatterplot={scatterplotState}
                     selectedPointColor={selectedPointColor}
                     pointColors={pointColors}
-                    pointSizeInitial={pointSizeInitial}
                     pointColorOptions={pointColorOptions}
                     pointColorOnChange={handlePointColorSelect}
+                    pointSize={pointSize}
+                    setPointSize={setPointSize}
                     setLegendVisibility={setLegendVisibility}
                     legendVisibility={legendVisibility}
                     kNeighbors={kNeighbors}
