@@ -156,14 +156,15 @@ def tsne_skrodzki(
         random_state=rs,
         negative_gradient_method="fft",
     )
-    
+
     coarse_embedding.optimize(early_exag_iter, exaggeration=12, inplace=True)
     coarse_embedding.optimize(n_iter=n_iter, exaggeration=exaggeration, inplace=True)
     print("openTSNE: Coarse embedding total", time.time() - start_aff, flush=True)
 
-
     # now need affinities for whole dataset
-    print(f"Computing affinities for whole dataset with perplexity {smoothing_perplexity}...")
+    print(
+        f"Computing affinities for whole dataset with perplexity {smoothing_perplexity}..."
+    )
     aff_fine_start = time.time()
     aff_fine = openTSNE.affinity.PerplexityBasedNN(
         data,
@@ -171,7 +172,7 @@ def tsne_skrodzki(
         n_jobs=8,
         random_state=rs,
         metric=hd_metric,
-        method="annoy"
+        method="annoy",
     )
     print("openTSNE: Fine NN search", time.time() - aff_fine_start, flush=True)
 
@@ -186,12 +187,11 @@ def tsne_skrodzki(
         n_jobs=8,
         verbose=True,
         random_state=rs,
-        negative_gradient_method="fft"
+        negative_gradient_method="fft",
     )
     smooth_embedding.optimize(smoothing_iter, exaggeration=exaggeration, inplace=True)
     print("openTSNE: Fine embedding total", time.time() - aff_fine_start, flush=True)
 
-    
     smooth_embedding = normalizeEmbedding(smooth_embedding)
 
     if save_fpath is not None:
@@ -201,47 +201,153 @@ def tsne_skrodzki(
 
 
 def compute_tsne_series(
-    X: np.ndarray,
-    max_exaggeration: int,
-    fpath_prefix: str,
+    data: np.ndarray,
+    coarse_exag_iter=[(12, 200)],
+    fine_exag_iter=[(10, 200), (5, 200), (3, 200), (1, 200)],
+    fpath_prefix: str = None,
     hd_metric: str = "euclidean",
     init: np.ndarray = None,
-    align_sequence: bool = True,
+    sampling_frac: float = 0.01,
+    smoothing_perplexity: int = 30,
+    **kwargs,
 ):
     """
-    Compute a series of tSNE embeddings with decreasing exaggeration.
+    Compute a series of tSNE embeddings by decreasing the exaggeration.
 
     Args:
         X (np.ndarray): The input data matrix of shape (n_samples, n_features).
-        max_exaggeration (int): The maximum exaggeration value for tSNE.
-        fpath_prefix (str): The file path prefix for saving the embeddings.
+        coarse_exag_iter (list(Tuple(int, int))): A list of tuples containing the exaggeration and the
+            number of iterations for the coarse embedding.
+        fine_exag_iter (list(Tuple(int, int))): A list of tuples containing the exaggeration and the
+            number of iterations for the fine embedding.
+        fpath_prefix (str, optional): The file path prefix for saving the embeddings.
         hd_metric (str, optional): The metric used for high-dimensional space distance calculation (default: "euclidean").
         init (np.ndarray, optional): The initial embedding to use for tSNE (default: None).
-        align_sequence (bool, optional): Whether to align (i.e. initialize with previous embedding)
-            the tSNE embeddings in the sequence (default: True).
+        smoothing_perplexity (float, optional): The perplexity for smoothing. Default is 30.
+        kwargs: Additional keyword arguments for TSNEEmbedding from openTSNE.
 
     Returns:
-        embeddings (Dict[str, np.ndarray]): A dictionary containing the tSNE embeddings, where the keys contain the exaggeration and the values are the embeddings.
+        embeddings (Dict[str, np.ndarray]): A dictionary containing the tSNE embeddings,
+            where the keys contain the exaggeration (from the fine_exag_iter list) and the values are the embeddings.
     """
     embeddings = {}
-    init = init
 
-    for exag in range(max_exaggeration, 0, -1):
-        if exag == max_exaggeration and align_sequence:
-            early_exag_iter = 250
-        else:
-            early_exag_iter = 0
-        embedding = tsne_skrodzki(
-            data=X,
-            init=init,
-            early_exag_iter=early_exag_iter,
-            exaggeration=exag,
-            save_fpath=fpath_prefix + f"_exag_{exag}.csv",
-            hd_metric=hd_metric,
+    random_state = 42
+    n = data.shape[0]
+    start_aff = time.time()
+
+    # only do coarse embedding if sampling frac is in (0, 1)
+    if sampling_frac > 0 and sampling_frac < 1:
+        sampling_size = math.ceil(n * sampling_frac)
+        sample_ind = np.random.choice(n, size=sampling_size, replace=False)
+        coarse_perp = math.ceil((n * sampling_frac) / 100)
+
+        landmark_knn_index = openTSNE.affinity.get_knn_index(
+            data[sample_ind, :],
+            "annoy",
+            int(3 * coarse_perp),
+            "euclidean",
+            n_jobs=8,
+            random_state=None,
+            verbose=True,
         )
-        if align_sequence:
-            init = embedding
-        embeddings[f"tSNE_exag_{exag}"] = embedding
+
+        print(
+            f"Computing affinities with perplexity {coarse_perp} for a sample of {sampling_size} points..."
+        )
+        # computing coarse embedding
+        aff_coarse = openTSNE.affinity.PerplexityBasedNN(
+            perplexity=coarse_perp,
+            method="annoy",
+            n_jobs=8,
+            random_state=random_state,
+            metric=hd_metric,
+            verbose=True,
+            knn_index=landmark_knn_index,
+        )
+
+        # initialization
+        if init is None:
+            print(f"Computing PCA initialization...")
+            init = openTSNE.initialization.pca(data[sample_ind, :])
+        else:
+            init = openTSNE.initialization.rescale(init[sample_ind, :])
+
+        coarse_embedding = openTSNE.TSNEEmbedding(
+            embedding=init,
+            affinities=aff_coarse,
+            n_jobs=8,
+            verbose=True,
+            random_state=random_state,
+            **kwargs,
+        )
+
+        # optimize coarse embedding
+        for exag, n_iter in coarse_exag_iter:
+            coarse_embedding.optimize(n_iter=n_iter, exaggeration=exag, inplace=True)
+        coarse_embedding_time = time.time() - start_aff
+        print(
+            f"Execution time of coarse embedding is {coarse_embedding_time:.2f} seconds.",
+            flush=True,
+            end="\n",
+        )
+
+    # now need affinities for whole dataset
+    print(
+        f"Computing affinities for whole dataset with perplexity {smoothing_perplexity}..."
+    )
+    fine_knn_index = openTSNE.affinity.get_knn_index(
+        data,
+        "annoy",
+        int(3 * smoothing_perplexity),
+        "euclidean",
+        n_jobs=8,
+        random_state=random_state,
+        verbose=True,
+    )
+    aff_fine = openTSNE.affinity.PerplexityBasedNN(
+        perplexity=smoothing_perplexity,
+        n_jobs=8,
+        random_state=random_state,
+        metric=hd_metric,
+        method="annoy",
+        knn_index=fine_knn_index,
+    )
+
+    if sampling_frac > 0 and sampling_frac < 1:
+        print(
+            "Prolongating embedding by placing each point on their nearest landmark..."
+        )
+        fine_init = prolongate_embedding(
+            data, coarse_embedding, sample_ind, aff_coarse.knn_index
+        )
+        fine_init = openTSNE.initialization.rescale(fine_init)
+    else:
+        if init is None:
+            print(f"Computing PCA initialization...")
+            fine_init = openTSNE.initialization.pca(data)
+        else:
+            fine_init = openTSNE.initialization.rescale(init)
+
+    smooth_embedding = openTSNE.TSNEEmbedding(
+        embedding=fine_init,
+        affinities=aff_fine,
+        n_jobs=8,
+        verbose=True,
+        random_state=random_state,
+        **kwargs,
+    )
+
+    # Optimize fine embedding
+    for exag, n_iter in fine_exag_iter:
+        smooth_embedding.optimize(n_iter=n_iter, exaggeration=exag, inplace=True)
+        embeddings[exag] = np.asarray(smooth_embedding).copy()
+        if fpath_prefix is not None:
+            np.savetxt(
+                f"{fpath_prefix}_tsne_exg_{exag}.csv", X=smooth_embedding, delimiter=","
+            )
+    print(f"\nTotal execution time: {time.time() - start_aff:.2f} seconds", flush=True)
+
     return embeddings
 
 

@@ -9,6 +9,7 @@ import centroid_correlation
 import utils
 from sklearn.neighbors import NearestNeighbors
 from alignment import umeyama_alignment
+from collections.abc import Mapping
 
 
 class Dataset:
@@ -16,7 +17,7 @@ class Dataset:
     The Dataset class is used to store and manage the data for a single dataset.
 
     The quality scores are stored in adata.uns['embedding_name']['quality'] as a dictionary.
-    The dictionary adata.uns['methods'] contains the available embeddings 
+    The dictionary adata.uns['methods'] contains the available embeddings
     as keys and the number of different embeddings from that method as values.
     """
 
@@ -66,13 +67,6 @@ class Dataset:
 
         self.__check_andata()
 
-        if verbose:
-            print(
-                f"\nLoaded {self.name} data.\n"
-                + f"Embeddings {self.get_embedding_names()}.\n"
-                + f"Quality features {self.get_quality_features()}."
-            )
-
     def __load_anndata(self, adata: ad.AnnData | str, hd_data_key: str):
         """
         Load an AnnData object into the dataset.
@@ -87,6 +81,12 @@ class Dataset:
             if os.path.isfile(adata):
                 self.filepath = adata
                 self.adata = ad.read_h5ad(adata, backed="r")
+                if self.verbose:
+                    print(
+                        f"\nLoaded {self.name} data.\n"
+                        + f"Embeddings {self.get_embedding_names()}.\n"
+                        + f"Quality features {self.get_quality_features()}."
+                    )
             else:
                 raise FileNotFoundError(f"File {adata} not found.")
         elif isinstance(adata, ad.AnnData):
@@ -172,6 +172,31 @@ class Dataset:
             self.adata.uns[name] = meta_info
         else:
             self.adata.uns[name] = {"quality": {}}
+
+    def add_metadata(self, metadata: pd.DataFrame | Mapping[str, np.ndarray]):
+        """
+        Add metadata to the dataset.
+
+        Args:
+            metadata (pd.DataFrame | Mapping[str, np.ndarray]): The metadata to be added.
+                If a pd.DataFrame is provided, it should have a value for each point in the dataset.
+                If a Mapping[str, np.ndarray] is provided, each key-value pair represents a metadata column,
+                where the key is the column name and the value is an array of values for each point.
+
+        Raises:
+            ValueError: If the length of the metadata does not match the number of points in the dataset.
+        """
+        if isinstance(metadata, pd.DataFrame):
+            if len(metadata) != self.adata.n_obs:
+                raise ValueError(f"Metadata should have a value for each point.")
+            self.adata.obs = pd.concat([self.adata.obs, metadata], axis=1)
+        else:
+            for key, value in metadata.items():
+                if len(value) != self.adata.n_obs:
+                    raise ValueError(
+                        f"Metadata {key} should have a value for each point."
+                    )
+                self.adata.obs[key] = value
 
     def rename_quality_column(self, old_name: str, new_name: str):
         """
@@ -404,7 +429,7 @@ class Dataset:
                 ].mean()
         print(avg_quality_df)
 
-    def precompute_HD_neighbors(self, maxK: int, metric: str, exact=False):
+    def precompute_HD_neighbors(self, maxK: int, metric: str = None, exact=False):
         """
         Precomputes the high-dimensional (HD) neighbors for each data point.
 
@@ -413,12 +438,15 @@ class Dataset:
             metric (str): The distance metric to use for computing neighbors.
             exact (bool, optional): Whether to compute exact neighbors or use an approximate algorithm. Defaults to False.
         """
+        if metric is None:
+            metric = self.hd_metric
         if (
             metric in self.adata.uns["hd_neighbors"]
             and self.adata.uns["hd_neighbors"][metric].shape[1] < maxK
         ) or (metric not in self.adata.uns["hd_neighbors"]):
             if self.verbose:
                 print(f"Computing all HD neighbors until k = {maxK}")
+            start_time = time.time()
             self.adata.uns["hd_neighbors"][metric] = neighbors.get_nearest_neighbors(
                 data=self.get_HD_data(),
                 indices=range(self.adata.n_obs),
@@ -427,6 +455,8 @@ class Dataset:
                 filepath=self.get_annoy_index(metric),
                 exact=exact,
             )
+            if self.verbose:
+                print(f"Done ({time.time()-start_time:.2f}s).")
 
     def get_HD_neighbors(self, k: int, metric: str, indices: np.ndarray):
         """
@@ -463,7 +493,7 @@ class Dataset:
     def compute_neighborhood_preservation(
         self,
         neighborhood_sizes: list[int],
-        hd_metric: str,
+        hd_metric: str = None,
         ld_metric: str = "euclidean",
     ):
         """
@@ -475,6 +505,8 @@ class Dataset:
             hd_metric (str): The metric to use for high-dimensional space.
             ld_metric (str, optional): The metric to use for low-dimensional space. Defaults to "euclidean".
         """
+        if hd_metric is None:
+            hd_metric = self.hd_metric
         if hd_metric not in self.adata.uns["hd_neighbors"] or self.adata.uns[
             "hd_neighbors"
         ][hd_metric].shape[1] < max(neighborhood_sizes):
@@ -483,7 +515,9 @@ class Dataset:
             self.precompute_HD_neighbors(
                 maxK=max(neighborhood_sizes), hd_metric=hd_metric
             )
-
+        if self.verbose:
+            print("Computing neighborhood preservation scores...", end="")
+        start_time = time.time()
         for name in self.get_embedding_names():
             if any(
                 [
@@ -492,6 +526,8 @@ class Dataset:
                     for k in neighborhood_sizes
                 ]
             ):
+                if self.verbose:
+                    print(f"{name}, ", end="")
                 preservation = neighbors.neighborhood_preservation_multi(
                     hd_neighbors=self.adata.uns["hd_neighbors"][hd_metric],
                     embedding=self.adata.obsm[name],
@@ -502,14 +538,22 @@ class Dataset:
                     self.adata.uns[name]["quality"][
                         f"neighborhood preservation k={k}"
                     ] = preservation[:, i]
+        if self.verbose:
+            print(f"Done ({time.time()-start_time:.2f}s).")
 
     def compute_global_distance_correlation(
         self,
-        hd_metric: str,
+        hd_metric: str = None,
         max_landmarks: int = 1000,
         LD_landmark_neighbors: bool = True,
     ):
+        start_time = time.time()
+        if hd_metric is None:
+            hd_metric = self.hd_metric
+
         if "landmark distance correlation" not in self.get_quality_features():
+            if self.verbose:
+                print("Computing landmark distance correlation...", end="")
             landmark_indices = centroid_correlation.sample_landmarks(
                 data=self.get_HD_data(),
                 max_samples=max_landmarks,
@@ -521,6 +565,8 @@ class Dataset:
             )
 
             for name in self.get_embedding_names():
+                if self.verbose:
+                    print(f"{name}, ", end="")
                 self.adata.uns[name]["quality"]["landmark distance correlation"] = (
                     centroid_correlation.compute_landmark_correlation(
                         ld_data=self.adata.obsm[name],
@@ -532,6 +578,8 @@ class Dataset:
                         ld_metric="euclidean",
                     )
                 )
+            if self.verbose:
+                print(f"Done ({time.time()-start_time:.2f}s).")
 
     def get_HD_landmark_distances(self, selectedPoint: int):
         """
