@@ -11,8 +11,6 @@ import CanvasWrapper from '@/components/canvas_wrapper'
 import { ReactSelect, getPointSize } from "./utils"
 import GroupedSelect from "./groupedSelect"
 import { getHDNeighbors } from "./api";
-import html2canvas from 'html2canvas';
-import downloadjs from 'downloadjs';
 import { saveAsPng } from './utils';
 
 
