@@ -55,7 +55,7 @@ class Dataset:
         self.hd_annoy_filepath = dict()
 
         if hd_data is not None:
-            self.adata = ad.AnnData(X=hd_data)
+            self.adata = ad.AnnData(X=np.asarray(hd_data))
             self.hd_data_key = "X"
         elif adata is not None:
             self.__load_anndata(adata, hd_data_key)
@@ -234,7 +234,7 @@ class Dataset:
         if self.hd_data_key in self.adata.obsm_keys():
             return self.adata.obsm[self.hd_data_key]
         else:
-            return self.adata.X
+            return np.asarray(self.adata.X)
 
     def save_adata(self, filename=None):
         """
@@ -457,6 +457,9 @@ class Dataset:
             )
             if self.verbose:
                 print(f"Done ({time.time()-start_time:.2f}s).")
+                
+        if os.path.isfile(self.get_annoy_index(metric)):
+            os.remove(self.get_annoy_index(metric))
 
     def get_HD_neighbors(self, k: int, metric: str, indices: np.ndarray):
         """
@@ -551,35 +554,52 @@ class Dataset:
         if hd_metric is None:
             hd_metric = self.hd_metric
 
-        if "landmark distance correlation" not in self.get_quality_features():
+        # get embeddings for which the quality score is not yet computed
+        embedding_names = [
+            name
+            for name in self.get_embedding_names()
+            if "landmark distance correlation" not in self.adata.uns[name]["quality"]
+        ]
+
+        if len(embedding_names) == 0:
             if self.verbose:
-                print("Computing landmark distance correlation...", end="")
+                print(
+                    "Skipping landmark distance correlation. It is already available for all embeddings."
+                )
+            return
+
+        if self.verbose:
+            print("Computing landmark distance correlation...", end="")
+
+        if "landmark_indices" not in self.adata.uns_keys():
             landmark_indices = centroid_correlation.sample_landmarks(
                 data=self.get_HD_data(),
                 max_samples=max_landmarks,
             )
             self.adata.uns["landmark_indices"] = landmark_indices
 
-            hd_landmark_distances = centroid_correlation.compute_pairwise_distance(
-                X=self.get_HD_data()[landmark_indices], Y=None, metric=hd_metric
-            )
+        hd_landmark_distances = centroid_correlation.compute_pairwise_distance(
+            X=self.get_HD_data()[self.adata.uns["landmark_indices"]],
+            Y=None,
+            metric=hd_metric,
+        )
 
-            for name in self.get_embedding_names():
-                if self.verbose:
-                    print(f"{name}, ", end="")
-                self.adata.uns[name]["quality"]["landmark distance correlation"] = (
-                    centroid_correlation.compute_landmark_correlation(
-                        ld_data=self.adata.obsm[name],
-                        hd_data=self.get_HD_data(),
-                        landmark_indices=landmark_indices,
-                        hd_landmark_distances=hd_landmark_distances,
-                        LD_landmark_neighbors=LD_landmark_neighbors,
-                        hd_metric=hd_metric,
-                        ld_metric="euclidean",
-                    )
-                )
+        for name in embedding_names:
             if self.verbose:
-                print(f"Done ({time.time()-start_time:.2f}s).")
+                print(f"{name}, ", end="")
+            self.adata.uns[name]["quality"]["landmark distance correlation"] = (
+                centroid_correlation.compute_landmark_correlation(
+                    ld_data=self.adata.obsm[name],
+                    hd_data=self.get_HD_data(),
+                    landmark_indices=landmark_indices,
+                    hd_landmark_distances=hd_landmark_distances,
+                    LD_landmark_neighbors=LD_landmark_neighbors,
+                    hd_metric=hd_metric,
+                    ld_metric="euclidean",
+                )
+            )
+        if self.verbose:
+            print(f"Done ({time.time()-start_time:.2f}s).")
 
     def get_HD_landmark_distances(self, selectedPoint: int):
         """

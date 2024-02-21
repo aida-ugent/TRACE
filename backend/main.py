@@ -222,7 +222,6 @@ async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = No
             value_counts = list(fvalues.value_counts(ascending=False, sort=True).keys())
 
             if len(value_counts) > 30:
-                print(f"{fname} contains too many unique values ({len(value_counts)})")
                 fvalues = encoded_fvalues = np.zeros((dataset.adata.n_obs,), dtype=int)
                 colors = {f"too many values ({len(value_counts)})": "#444444"}
                 ftype = "categorical"
