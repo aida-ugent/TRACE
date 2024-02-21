@@ -591,7 +591,7 @@ class Dataset:
                 centroid_correlation.compute_landmark_correlation(
                     ld_data=self.adata.obsm[name],
                     hd_data=self.get_HD_data(),
-                    landmark_indices=landmark_indices,
+                    landmark_indices=self.adata.uns["landmark_indices"],
                     hd_landmark_distances=hd_landmark_distances,
                     LD_landmark_neighbors=LD_landmark_neighbors,
                     hd_metric=hd_metric,
