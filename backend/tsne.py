@@ -3,61 +3,7 @@ import numpy as np
 import os
 import time
 import math
-import argparse
 import anndata as ad
-from utils import normalizeEmbedding
-from numpy.random import MT19937
-from numpy.random import RandomState, SeedSequence
-
-# call eg.g. with
-# python tsne.py ../data/mouse_fibro/mouseCD45neg.h5ad -output ../data/mouse_fibro/embeddings/tsne_skrodzki_0.csv -exaggeration 5 -init "X_totalVI" -use-rep "X_totalVI" -hd-metric cosine
-# python tsne.py ../data/mouse_fibro/mouseCD45neg.h5ad -output ../data/mouse_fibro/embeddings/tsne_skrodzki_1.csv -exaggeration 4 -early-exag-iter 0 -init ../data/mouse_fibro/embeddings/tsne_skrodzki_0.csv  -use-rep "X_totalVI" -hd-metric cosine
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("adata", type=str, help="Path to .hd5ad anndata file.")
-    parser.add_argument(
-        "-output", type=str, help="Path to .csv output filepath.", default=None
-    )
-    parser.add_argument(
-        "-sampling-frac",
-        type=float,
-        help="Subsampling points for faster embeddings.",
-        default=0.1,
-    )
-    parser.add_argument(
-        "-exaggeration",
-        type=float,
-        help="Exaggeration factor to apply after early exaggeration.",
-        default=1,
-    )
-    parser.add_argument(
-        "-early-exag-iter",
-        type=int,
-        help="Number of iterations with early exaggeration. ",
-        default=250,
-    )
-    parser.add_argument(
-        "-init",
-        type=str,
-        help="Path to .csv file with embedding to initialize the optimization.",
-        default=None,
-    )
-    parser.add_argument(
-        "-use-rep",
-        type=str,
-        help="Name ob adata.obsm key to use for distance calculation",
-        default="X_pca",
-    )
-    parser.add_argument(
-        "-hd-metric",
-        type=str,
-        help="Metric to use for distance calculation",
-        default="euclidean",
-    )
-    args = parser.parse_args()
-    return args
 
 
 def prolongate_embedding(data, coarse_embedding, sampling_indices, coarse_knn_index):
@@ -84,120 +30,76 @@ def prolongate_embedding(data, coarse_embedding, sampling_indices, coarse_knn_in
     return new_embeddings
 
 
-def tsne_skrodzki(
-    data,
-    init=None,
-    sampling_frac=0.1,
-    exaggeration=1,
-    n_iter=750,
-    early_exag_iter=250,
-    smoothing_iter=250,
-    smoothing_perplexity=30,
-    save_fpath=None,
-    hd_metric="euclidean",
+def tsne_exaggeration(
+    data: np.ndarray,
+    exag_iter=[(10, 200), (5, 200), (3, 200), (1, 200)],
+    fpath_prefix: str = None,
+    hd_metric: str = "euclidean",
+    init: np.ndarray = None,
+    perplexity: int = 30,
+    random_state: int = 42,
+    return_affinities: bool = False,
+    **kwargs,
 ):
-    """
-    Compute a single t-SNE embedding using the sampling idea of Skrodzki et al.,
-    'Tuning the perplexity for and computing sampling-based t-SNE embeddings' (2023).
-
-    In their approach, a fraction k of the data is embedded using a perplexity
-    perp = (N*k)/100. Then, all remaining points are embedded at the location
-    of their nearest neighbor from the sample (prolongation). The final smoothing
-    step refines the full embedding with a perplexity of 30 for a couple of iterations.
-
-    Args:
-        data (array-like): The input data to be embedded.
-        init (array-like, optional): The initial embedding. If not provided, PCA initialization will be computed.
-        sampling_frac (float, optional): The fraction of data to be embedded using a perplexity perp = (N * sampling_frac) / 100. Default is 0.1.
-        exaggeration (float, optional): The exaggeration factor for t-SNE. Default is 1.
-        n_iter (int, optional): The total number of iterations for t-SNE. Default is 750.
-        early_exag_iter (int, optional): The number of iterations for early exaggeration. Default is 250.
-        smoothing_iter (int, optional): The number of iterations for smoothing. Default is 250.
-        smoothing_perplexity (float, optional): The perplexity for smoothing. Default is 30.
-        save_fpath (str, optional): The file path to save the embedding. Default is None.
-        hd_metric (str, optional): The metric to use for computing distances. Default is "euclidean".
-
-    Returns:
-        np.ndarray: The computed t-SNE embedding.
-
-    """
-    rs = RandomState(MT19937(SeedSequence(123456789)))
-    data = np.asarray(data, dtype=np.float32)
-    data_size = data.shape[0]
-    sampling_size = math.ceil(data_size * sampling_frac)
-    sample_ind = np.random.choice(data_size, size=sampling_size, replace=False)
-    coarse_perp = math.ceil((data_size * sampling_frac) / 100)
-    print(f"Computing affinities with perplexity {coarse_perp}...")
-    # computing coarse embedding
-    start_aff = time.time()
-    aff_coarse = openTSNE.affinity.PerplexityBasedNN(
-        data[sample_ind, :],
-        perplexity=coarse_perp,
-        method="annoy",
+    embeddings = {}
+    start = time.time()
+    landmark_knn_index = openTSNE.affinity.get_knn_index(
+        data,
+        "annoy",
+        int(3 * perplexity),
+        "euclidean",
         n_jobs=8,
-        random_state=rs,
-        metric=hd_metric,
+        random_state=None,
         verbose=True,
     )
-    print("openTSNE: Coarse NN search", time.time() - start_aff, flush=True)
+
+    print(f"Computing affinities with perplexity {perplexity}...")
+    # computing coarse embedding
+    affinities = openTSNE.affinity.PerplexityBasedNN(
+        perplexity=perplexity,
+        method="annoy",
+        n_jobs=8,
+        random_state=random_state,
+        metric=hd_metric,
+        verbose=True,
+        knn_index=landmark_knn_index,
+    )
 
     # initialization
     if init is None:
-        print(f"Computing PCA initialization...")
-        init = openTSNE.initialization.pca(data[sample_ind, :])
+        print("Computing PCA initialization...")
+        init = openTSNE.initialization.pca(data)
     else:
-        init = openTSNE.initialization.rescale(init[sample_ind, :])
+        init = openTSNE.initialization.rescale(init)
 
-    coarse_embedding = openTSNE.TSNEEmbedding(
+    embedding = openTSNE.TSNEEmbedding(
         embedding=init,
-        affinities=aff_coarse,
+        affinities=affinities,
         n_jobs=8,
         verbose=True,
-        random_state=rs,
-        negative_gradient_method="fft",
+        random_state=random_state,
+        **kwargs,
     )
 
-    coarse_embedding.optimize(early_exag_iter, exaggeration=12, inplace=True)
-    coarse_embedding.optimize(n_iter=n_iter, exaggeration=exaggeration, inplace=True)
-    print("openTSNE: Coarse embedding total", time.time() - start_aff, flush=True)
-
-    # now need affinities for whole dataset
+    # optimize coarse embedding
+    for exag, n_iter in exag_iter:
+        embedding.optimize(n_iter=n_iter, exaggeration=exag, inplace=True)
+        embeddings[exag] = np.asarray(embedding).copy()
+        if fpath_prefix is not None:
+            np.savetxt(
+                f"{fpath_prefix}_tsne_exg_{exag}.csv", X=embedding, delimiter=","
+            )
+    embedding_time = time.time() - start
     print(
-        f"Computing affinities for whole dataset with perplexity {smoothing_perplexity}..."
+        f"Done. ({embedding_time:.2f}s)",
+        flush=True,
+        end="\n",
     )
-    aff_fine_start = time.time()
-    aff_fine = openTSNE.affinity.PerplexityBasedNN(
-        data,
-        perplexity=smoothing_perplexity,
-        n_jobs=8,
-        random_state=rs,
-        metric=hd_metric,
-        method="annoy",
-    )
-    print("openTSNE: Fine NN search", time.time() - aff_fine_start, flush=True)
 
-    fine_init = prolongate_embedding(
-        data, coarse_embedding, sample_ind, aff_coarse.knn_index
-    )
-    fine_init = openTSNE.initialization.rescale(fine_init)
-
-    smooth_embedding = openTSNE.TSNEEmbedding(
-        embedding=fine_init,
-        affinities=aff_fine,
-        n_jobs=8,
-        verbose=True,
-        random_state=rs,
-        negative_gradient_method="fft",
-    )
-    smooth_embedding.optimize(smoothing_iter, exaggeration=exaggeration, inplace=True)
-    print("openTSNE: Fine embedding total", time.time() - aff_fine_start, flush=True)
-
-    smooth_embedding = normalizeEmbedding(smooth_embedding)
-
-    if save_fpath is not None:
-        np.savetxt(save_fpath, X=smooth_embedding, delimiter=",")
-
-    return np.asarray(smooth_embedding)
+    if return_affinities:
+        return embeddings, affinities
+    else:
+        return embeddings
 
 
 def compute_tsne_series(
@@ -209,15 +111,22 @@ def compute_tsne_series(
     init: np.ndarray = None,
     sampling_frac: float = 0.01,
     smoothing_perplexity: int = 30,
+    random_state: int = 42,
     **kwargs,
 ):
     """
-    Compute a series of tSNE embeddings by decreasing the exaggeration.
+    Compute a single t-SNE embedding using the sampling idea of Skrodzki et al.,
+    'Tuning the perplexity for and computing sampling-based t-SNE embeddings' (2023).
+
+    In their approach, a fraction k of the data is embedded using a perplexity
+    perp = (N*k)/100. Then, all remaining points are embedded at the location
+    of their nearest neighbor from the sample (prolongation). The final smoothing
+    step refines the full embedding with a low perplexity for a couple of iterations.
 
     Args:
         X (np.ndarray): The input data matrix of shape (n_samples, n_features).
         coarse_exag_iter (list(Tuple(int, int))): A list of tuples containing the exaggeration and the
-            number of iterations for the coarse embedding.
+            number of iterations for the coarse embedding. Only used if sampling frac is in (0, 1).
         fine_exag_iter (list(Tuple(int, int))): A list of tuples containing the exaggeration and the
             number of iterations for the fine embedding.
         fpath_prefix (str, optional): The file path prefix for saving the embeddings.
@@ -230,11 +139,8 @@ def compute_tsne_series(
         embeddings (Dict[str, np.ndarray]): A dictionary containing the tSNE embeddings,
             where the keys contain the exaggeration (from the fine_exag_iter list) and the values are the embeddings.
     """
-    embeddings = {}
-
-    random_state = 42
     n = data.shape[0]
-    start_aff = time.time()
+    fine_init = None
 
     # only do coarse embedding if sampling frac is in (0, 1)
     if sampling_frac > 0 and sampling_frac < 1:
@@ -242,84 +148,24 @@ def compute_tsne_series(
         sample_ind = np.random.choice(n, size=sampling_size, replace=False)
         coarse_perp = math.ceil((n * sampling_frac) / 100)
 
-        landmark_knn_index = openTSNE.affinity.get_knn_index(
-            data[sample_ind, :],
-            "annoy",
-            int(3 * coarse_perp),
-            "euclidean",
-            n_jobs=8,
-            random_state=None,
-            verbose=True,
-        )
-
-        print(
-            f"Computing affinities with perplexity {coarse_perp} for a sample of {sampling_size} points..."
-        )
-        # computing coarse embedding
-        aff_coarse = openTSNE.affinity.PerplexityBasedNN(
+        coarse_embeddings, coarse_affinities = tsne_exaggeration(
+            data=data[sample_ind, :],
+            exag_iter=coarse_exag_iter,
+            fpath_prefix=None,
+            hd_metric=hd_metric,
+            init=init[sample_ind, :],
             perplexity=coarse_perp,
-            method="annoy",
-            n_jobs=8,
             random_state=random_state,
-            metric=hd_metric,
-            verbose=True,
-            knn_index=landmark_knn_index,
-        )
-
-        # initialization
-        if init is None:
-            print(f"Computing PCA initialization...")
-            init = openTSNE.initialization.pca(data[sample_ind, :])
-        else:
-            init = openTSNE.initialization.rescale(init[sample_ind, :])
-
-        coarse_embedding = openTSNE.TSNEEmbedding(
-            embedding=init,
-            affinities=aff_coarse,
-            n_jobs=8,
-            verbose=True,
-            random_state=random_state,
+            return_affinities=True,
             **kwargs,
         )
 
-        # optimize coarse embedding
-        for exag, n_iter in coarse_exag_iter:
-            coarse_embedding.optimize(n_iter=n_iter, exaggeration=exag, inplace=True)
-        coarse_embedding_time = time.time() - start_aff
-        print(
-            f"Execution time of coarse embedding is {coarse_embedding_time:.2f} seconds.",
-            flush=True,
-            end="\n",
-        )
-
-    # now need affinities for whole dataset
-    print(
-        f"Computing affinities for whole dataset with perplexity {smoothing_perplexity}..."
-    )
-    fine_knn_index = openTSNE.affinity.get_knn_index(
-        data,
-        "annoy",
-        int(3 * smoothing_perplexity),
-        "euclidean",
-        n_jobs=8,
-        random_state=random_state,
-        verbose=True,
-    )
-    aff_fine = openTSNE.affinity.PerplexityBasedNN(
-        perplexity=smoothing_perplexity,
-        n_jobs=8,
-        random_state=random_state,
-        metric=hd_metric,
-        method="annoy",
-        knn_index=fine_knn_index,
-    )
-
-    if sampling_frac > 0 and sampling_frac < 1:
         print(
             "Prolongating embedding by placing each point on their nearest landmark..."
         )
+        coarse_embedding = coarse_embeddings[coarse_exag_iter[-1][0]]
         fine_init = prolongate_embedding(
-            data, coarse_embedding, sample_ind, aff_coarse.knn_index
+            data, coarse_embedding, sample_ind, coarse_affinities.knn_index
         )
         fine_init = openTSNE.initialization.rescale(fine_init)
     else:
@@ -329,53 +175,14 @@ def compute_tsne_series(
         else:
             fine_init = openTSNE.initialization.rescale(init)
 
-    smooth_embedding = openTSNE.TSNEEmbedding(
-        embedding=fine_init,
-        affinities=aff_fine,
-        n_jobs=8,
-        verbose=True,
+    fine_embeddings = tsne_exaggeration(
+        data=data,
+        exag_iter=fine_exag_iter,
+        fpath_prefix=fpath_prefix,
+        hd_metric=hd_metric,
+        init=fine_init,
+        perplexity=smoothing_perplexity,
         random_state=random_state,
         **kwargs,
     )
-
-    # Optimize fine embedding
-    for exag, n_iter in fine_exag_iter:
-        smooth_embedding.optimize(n_iter=n_iter, exaggeration=exag, inplace=True)
-        embeddings[exag] = np.asarray(smooth_embedding).copy()
-        if fpath_prefix is not None:
-            np.savetxt(
-                f"{fpath_prefix}_tsne_exg_{exag}.csv", X=smooth_embedding, delimiter=","
-            )
-    print(f"\nTotal execution time: {time.time() - start_aff:.2f} seconds", flush=True)
-
-    return embeddings
-
-
-if __name__ == "__main__":
-    args = parse_args()
-    adata = ad.read_h5ad(args.adata)
-
-    if args.use_rep in adata.obsm_keys():
-        data = adata.obsm[args.use_rep]
-        print(f"Using {args.use_rep} as HD data.")
-    else:
-        data = np.asarray(adata.X)
-
-    if args.init is not None and os.path.isfile(args.init):
-        print(f"Using {args.init} as initialization.")
-        init = np.loadtxt(args.init, delimiter=",")
-    elif args.init is not None and args.init in adata.obsm_keys():
-        print(f"Using {args.init} from obsm as initialization.")
-        init = adata.obsm[args.init][:, 0:2]
-    else:
-        init = None
-
-    tsne_skrodzki(
-        data=data,
-        init=init,
-        sampling_frac=args.sampling_frac,
-        exaggeration=args.exaggeration,
-        early_exag_iter=args.early_exag_iter,
-        save_fpath=args.output,
-        hd_metric=args.hd_metric,
-    )
+    return fine_embeddings
