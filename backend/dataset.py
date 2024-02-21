@@ -9,6 +9,7 @@ import centroid_correlation
 import utils
 from sklearn.neighbors import NearestNeighbors
 from alignment import umeyama_alignment
+import evaluation.triplet_accuracy as triplet_accuracy
 from collections.abc import Mapping
 
 
@@ -457,7 +458,7 @@ class Dataset:
             )
             if self.verbose:
                 print(f"Done ({time.time()-start_time:.2f}s).")
-                
+
         if os.path.isfile(self.get_annoy_index(metric)):
             os.remove(self.get_annoy_index(metric))
 
@@ -638,3 +639,58 @@ class Dataset:
             distance_to_landmarks, self.adata.uns["closestLandmarks"], axis=0
         )
         return distances
+
+    def delete_quality_scores(self, quality_scores: list[str]):
+        """
+        Delete quality scores from the dataset.
+
+        Args:
+            quality_scores (list[str]): The quality scores to be deleted.
+        """
+        for name in self.get_embedding_names():
+            for quality_score in quality_scores:
+                if quality_score in self.adata.uns[name]["quality"]:
+                    del self.adata.uns[name]["quality"][quality_score]
+
+    def compute_random_triplet_accuracy(
+        self, num_triplets=10, hd_metric=None, same_triplets=True
+    ):
+        if hd_metric is None:
+            hd_metric = self.hd_metric
+
+        if self.verbose:
+            print(f"Computing random triplet accuracy...", end="")
+        start_time = time.time()
+
+        if same_triplets:
+            labels, triplets = triplet_accuracy.compute_hd_triplets(
+                X=self.get_HD_data(),
+                num_triplets=num_triplets,
+                hd_metric=hd_metric,
+            )
+            for name in self.get_embedding_names():
+                if "random triplet accuracy" not in self.adata.uns[name]["quality"]:
+                    if self.verbose:
+                        print(f"{name}, ", end="")
+                    self.adata.uns[name]["quality"]["random triplet accuracy"] = (
+                        triplet_accuracy.get_triplet_accuracy(
+                            Y=self.adata.obsm[name],
+                            hd_labels=labels,
+                            triplets=triplets,
+                        )
+                    )
+        else:
+            for name in self.get_embedding_names():
+                if "random triplet accuracy" not in self.adata.uns[name]["quality"]:
+                    if self.verbose:
+                        print(f"{name}, ", end="")
+                    self.adata.uns[name]["quality"]["random triplet accuracy"] = (
+                        triplet_accuracy.random_triplet_eval(
+                            X=self.get_HD_data(),
+                            Y=self.adata.obsm[name],
+                            num_triplets=num_triplets,
+                            hd_metric=hd_metric,
+                        )
+                    )
+            if self.verbose:
+                print(f"Done ({time.time()-start_time:.2f}s).")
