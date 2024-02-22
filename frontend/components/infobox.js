@@ -3,12 +3,12 @@ import { HoverNote } from "./utils";
 import { Switch } from '@headlessui/react'
 import GroupedSelect from "./groupedSelect";
 
-function HoverText({ pointId, pointData }) {
+function HoverText({ pointData }) {
     return (
         <>
-            {Object.keys(pointData).map((key) => {
+            {pointData.map((item) => {
                 return (
-                    <p key={key}>{key}: {pointData[key]}</p>
+                    <p key={item['key']}><b>{item['key']}:</b> {item['value']}</p>
                 )
             })}
         </>
@@ -35,6 +35,8 @@ export function Infobox(props) {
     const [hoverNoteEnabled, setHoverNoteEnabled] = useState(false)
     const [hoverData, setHoverData] = useState([])
     const [hoverFeatures, setHoverFeatures] = useState([])
+    // Exluding the quality features, because we would have to re-fetch them 
+    // every time the embedding changes
     const hoverFeatureOptions = pointColorOptions.filter((v) => v.label != "quality")
     hoverFeatureOptions.forEach((v) => {
         if (v.label == "metadata") {
@@ -58,26 +60,26 @@ export function Infobox(props) {
 
     const hoverFeaturesOnChange = (newValue) => {
         let newFeatures = newValue.map(v => v.value);
-        setHoverFeatures(newFeatures);
         if (hoverNoteEnabled) {
-            // do we need to fetch new features?
             let fetchFeatures = newFeatures.filter(x => !hoverFeatures.includes(x));
             let deleteFeatures = hoverFeatures.filter(x => !newFeatures.includes(x));
             if (fetchFeatures.length > 0) {
-                getHoverData(newFeatures);
-
-                // subscribe to pointover and pointout events
-                subscribe();
+                getHoverData(fetchFeatures)
+                    .then((data) => {
+                        const updatedHoverData = { ...hoverData };
+                        fetchFeatures.forEach((feature) => {
+                            updatedHoverData[feature] = data[feature];
+                        });
+                        setHoverData(updatedHoverData);
+                        setHoverFeatures(newFeatures);
+                        subscribe();
+                    })
 
             } else if (deleteFeatures.length > 0) {
                 deleteFeatures.forEach(f => {
                     delete hoverData[f];
                 })
-
-                // disable hover not if no features are selected
-                if (newFeatures.length == 0) {
-                    unsubscribe();
-                }
+                setHoverFeatures(newFeatures);
             }
         }
     }
@@ -125,13 +127,13 @@ export function Infobox(props) {
         }
     }
 
-    const getHoverData = (feature) => {
-        let body = JSON.stringify({ feature_list: feature })
+    const getHoverData = (features) => {
         return new Promise((resolve, reject) => {
-            if (feature.length == 0) {
-                resolve(true);
+            if (features.length == 0) {
+                resolve([]);
             } else {
-                console.log("fetching hover metadata features")
+                let body = JSON.stringify({ feature_list: features })
+                console.log(`fetching hover features ${features}`)
                 fetch("/backend/metadataFeatures", {
                     method: "POST",
                     body: body,
@@ -141,8 +143,7 @@ export function Infobox(props) {
                 })
                     .then(res => res.json())
                     .then(data => {
-                        setHoverData(data);
-                        resolve(true);
+                        resolve(data);
                     })
             }
         })
@@ -151,27 +152,37 @@ export function Infobox(props) {
     const getSingleHoverData = (pointID) => {
         // make a dictionary with keys the hover features and values the hover data for point with index pointID
         if (hoverState.visibility == "visible") {
-            let pointData = {}
+            let pointData = [];
+            if (!hoverFeatures.includes(selectedPointColor)) {
+                pointData.push({'key': selectedPointColor, 'value': prettyPrint(pointColors["values"][pointID])});
+            }
             hoverFeatures.forEach(f => {
-                pointData[f] = prettyPrint(hoverData[f][pointID])
+                pointData.push({'key': f, 'value': prettyPrint(hoverData[f][pointID])});
             })
             return pointData;
         } else {
-            return {}
+            return [];
         }
     }
 
     const handleHoverNoteEnabled = (enabled) => {
         if (scatterplot !== null) {
             if (enabled) {
-                if (hoverFeatures.length > 0) {
-                    getHoverData(hoverFeatures)
-                        .then(() => subscribe())
-                }
+                getHoverData(hoverFeatures)
+                    .then((data) => {
+                        setHoverData(data);
+                        subscribe();
+                        setHoverNoteEnabled(enabled);
+                    }
+                    )
             }
-            else unsubscribe();
+            else {
+                unsubscribe();
+                setHoverNoteEnabled(enabled);
+            }
+        } else {
+            setHoverNoteEnabled(enabled);
         }
-        setHoverNoteEnabled(enabled);
     }
 
     return (
@@ -180,11 +191,7 @@ export function Infobox(props) {
                 visible={hoverState.visibility}
                 position={hoverState.position}
                 color={getHoverColor(hoverState.pointId)}>
-                <HoverText
-                    pointId={hoverState.pointId}
-                    pointColors={pointColors}
-                    selectedPointColor={selectedPointColor}
-                    pointData={getSingleHoverData(hoverState.pointId)} />
+                <HoverText pointData={getSingleHoverData(hoverState.pointId)} />
             </HoverNote>
             <div className="flex flex-col items-left my-2 justify-between">
                 <Switch.Group>

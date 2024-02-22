@@ -28,7 +28,7 @@ class Dataset:
         hd_data: np.ndarray = None,
         adata: ad.AnnData = None,
         filepath: str = None,
-        hd_data_key: str = None,
+        hd_data_key: str = "X",
         hd_metric: str = None,
         description: str = None,
         verbose: bool = False,
@@ -57,7 +57,6 @@ class Dataset:
 
         if hd_data is not None:
             self.adata = ad.AnnData(X=np.asarray(hd_data))
-            self.hd_data_key = "X"
         elif adata is not None:
             self.__load_anndata(adata, hd_data_key)
         elif filepath is not None:
@@ -129,6 +128,9 @@ class Dataset:
                 self.adata.uns[name] = {"quality": {}}
             elif "quality" not in self.adata.uns[name].keys():
                 self.adata.uns[name]["quality"] = {}
+                
+        if self.hd_metric is None and len(self.adata.uns["hd_neighbors"].keys()) > 0:
+            self.hd_metric = list(self.adata.uns["hd_neighbors"].keys())[0]
 
     def add_embedding(
         self,
@@ -236,6 +238,7 @@ class Dataset:
             return self.adata.obsm[self.hd_data_key]
         else:
             return np.asarray(self.adata.X)
+        
 
     def save_adata(self, filename=None):
         """

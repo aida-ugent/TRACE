@@ -102,6 +102,10 @@ async function precomputeNeighborsSubscribe(maxK, metric) {
 }
 
 
+function scaleOpacity(sliderValue) {
+  return Math.pow(sliderValue, 3);
+}
+
 export function SettingsMenu(props) {
   const {
     scatterplot,
@@ -126,7 +130,7 @@ export function SettingsMenu(props) {
   const [visibility, setVisibility] = useState('visible')
   const [unstablePointFraction, setUnstablePointFraction] = useState(0.1);
   const [opacityByDensity, setOpacityByDensity] = useState(true);
-  const [opacity, setOpacity] = useState(0.2);
+  const [opacity, setOpacity] = useState({ 'slider': 0.2, 'value': scaleOpacity(0.2) });
 
   const toggleVisibility = () => {
     if (visibility == "visible") setVisibility("hidden"); else setVisibility("visible");
@@ -146,12 +150,12 @@ export function SettingsMenu(props) {
         if (scatterplot.get('opacityBy') === 'valueW') {
           scatterplot.set({
             opacityBy: 'w',
-            opacity: [opacity, 1],
+            opacity: [opacity['value'], 1],
           })
         } else {
           scatterplot.set({
             opacityBy: null,
-            opacity: opacity,
+            opacity: opacity['value'],
           })
         }
       }
@@ -175,12 +179,11 @@ export function SettingsMenu(props) {
     }
   }
 
-  const handleOpacitySelect = (opacity) => {
-    if (opacity < 0) {
-      opacity = 0;
-    }
-    const scaledOpacity = Math.pow(opacity, 3);
-    setOpacity(scaledOpacity);
+  const handleOpacitySelect = (newOpacity) => {
+    newOpacity = Math.max(0, Math.min(newOpacity, 1));
+
+    const scaledOpacity = scaleOpacity(newOpacity);
+    setOpacity({ 'slider': newOpacity, 'value': scaledOpacity });
 
     if (scatterplot.get('opacityBy') == 'valueW') {
       scatterplot.set({
@@ -255,7 +258,7 @@ export function SettingsMenu(props) {
                   min={0}
                   max={1}
                   step={0.001}
-                  defaultValue={0.2}
+                  value={opacity['slider']}
                   onChange={(event) => handleOpacitySelect(+event.target.value)}
                   id="pointOpacitySlider"
                   disabled={opacityByDensity}
