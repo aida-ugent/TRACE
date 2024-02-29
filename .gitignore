@@ -20,6 +20,7 @@ data/**/*.pkl
 data/**/*.zip
 data/**/*.loom
 data/**/*.txt
+data/**/*.rds
 **/*.ann
 
 # dependencies
