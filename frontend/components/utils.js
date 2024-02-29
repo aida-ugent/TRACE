@@ -8,6 +8,16 @@ export function getPointSize(numPoints) {
 }
 
 
+export function prettyPrint(value) {
+  if (typeof value === 'string') {
+      return value;
+  } else if (typeof value === 'number') {
+      return value.toPrecision(3);
+  } else {
+      return value;
+  }
+}
+
 // from https://github.com/flekschas/regl-scatterplot/blob/39d353d5cf0f0e37f821c498322773989a1f5d1d/example/utils.js#L19
 export function downloadBlob(blob, name = 'file.txt') {
   const link = document.createElement('a');

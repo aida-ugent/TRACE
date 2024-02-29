@@ -385,7 +385,7 @@ class Dataset:
             fname (str): The name of the feature.
 
         Returns:
-            dict: A dictionary mapping each category to its corresponding color.
+            dict: A dictionary with "ticks" and "colors" keys.
         """
         if fname + "_colors" in self.adata.uns_keys():
             colors = self.adata.uns[fname + "_colors"][: len(categories)]
@@ -393,7 +393,7 @@ class Dataset:
             colors = glasbey.create_palette(
                 palette_size=len(categories), grid_size=32, colorblind_safe=True
             )
-        return dict(zip(categories, colors))
+        return {"ticks": categories, "colors": list(colors)}
 
     def align_embeddings(self, reference_embedding: str):
         if reference_embedding not in self.get_embedding_names():

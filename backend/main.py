@@ -195,7 +195,7 @@ async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = No
     Returns:
         dict: Dictionary with the following keys:
             "values": list,
-            "colorMap": dict with labels as keys and colors as values
+            "colorMap": dict with keys 'ticks' and 'colors' which are two lists of values
             "type": continuous | categorical,
     """
     scale_continuous = True
@@ -223,12 +223,15 @@ async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = No
 
             if len(value_counts) > 30:
                 encoded_fvalues = np.zeros((dataset.adata.n_obs,), dtype=int)
-                colors = {f"too many values ({len(value_counts)})": "#444444"}
+                colorMap = {
+                    "ticks": [f"too many values ({len(value_counts)})"],
+                    "colors": ["#444444"],
+                }
             else:
                 cat_dtype = CategoricalDtype(categories=value_counts)
                 encoded_fvalues = pd.Series(fvalues.values.tolist()).astype(cat_dtype)
                 encoded_fvalues = encoded_fvalues.cat.codes
-                colors = dataset.get_category_colors(fname, categories=value_counts)
+                colorMap = dataset.get_category_colors(fname, categories=value_counts)
                 range = [0, 1]
         else:
             ftype = "continuous"
@@ -273,32 +276,38 @@ async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = No
     else:
         print(f"{fname} is not in obs_names {dataset.adata.obs_keys()}")
         fvalues = encoded_fvalues = np.zeros((dataset.adata.n_obs,), dtype=int)
-        colors = {"none": "#444444"}
+        colorMap = {"ticks": ["none"], "colors": ["#444444"]}
         ftype = "categorical"
         fgroup = "metadata"
 
     # encode values
     if ftype == "continuous":
+        if isinstance(fvalues, pd.Series):
+            fvalues = fvalues.values
+
         # check for NaN values
         if np.isnan(np.sum(fvalues)):
-            print(f"{fname} contains NaN values. Replacing with mean.")
-            fvalues = fvalues.fillna(fvalues.mean())
+            isNaN = np.isnan(fvalues)
+            NaNmean = np.nanmean(fvalues)
+            fvalues[isNaN] = NaNmean
+            print(
+                f"{fname} contains {sum(isNaN)} NaN values. Replacing with mean {NaNmean}."
+            )
         if range is None:
             range = [float(fvalues.min()), float(fvalues.max())]
-        colorticks = np.linspace(
+        ticks = np.linspace(
             start=range[0], stop=range[1], num=len(colors), endpoint=True
         )
-        colorticks = [f"{x:.2}" for x in colorticks]
-        colors = dict(zip(colorticks, colors))
+        ticks = [f"{x:.2}" for x in ticks]
+        colorMap = {"ticks": ticks, "colors": colors}
         if scale_continuous:
             encoded_fvalues = (fvalues - range[0]) / (range[1] - range[0])
         else:
             encoded_fvalues = fvalues
-
     res = {
         "values": fvalues.tolist(),
         "encoded_values": encoded_fvalues.tolist(),
-        "colorMap": colors,
+        "colorMap": colorMap,
         "type": ftype,
         "group": fgroup,
     }

@@ -31,8 +31,8 @@ export default function Legend({ colormap, title, filter, unfilter, visibility }
         items = Array.from(colormap.keys())
         colors = Array.from(colormap.values())
     } else {
-        items = Object.keys(colormap);
-        colors = Object.values(colormap);
+        items = colormap["ticks"];
+        colors = colormap["colors"];
     }
 
     if (title === "none") {

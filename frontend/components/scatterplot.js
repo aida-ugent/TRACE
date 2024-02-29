@@ -13,7 +13,6 @@ import GroupedSelect from "./groupedSelect"
 import { getHDNeighbors } from "./api";
 import { saveAsPng } from './utils';
 
-
 // default options
 let maxNeighbors = 200;
 
@@ -108,15 +107,13 @@ export const isSameElements = (a, b) => {
 };
 
 function showEmbedding({
-    embedding, pointColor, opacities, useTransition = true,
+    embedding, pointColor, colorMap, opacities, useTransition = true,
     preventFilterReset = true, opacityBy = null, setLoadingFn = null,
     opacityValues = null, pointSize = null }) {
     let cview = scatterplot.get('cameraView');
     if (!preventFilterReset) resetPointFilter();
-
     if (setLoadingFn != null) setLoadingFn(false);
 
-    console.log(`opacityBy: ${scatterplot.get('opacityBy')}, opacity ${scatterplot.get('opacity')}`)
     scatterplot
         .draw(
             {
@@ -136,7 +133,7 @@ function showEmbedding({
         ).then(() => {
             scatterplot.set({
                 cameraView: cview,
-                pointColor: Object.values(pointColor["colorMap"]),
+                pointColor: colorMap["colors"],
                 opacityBy: opacityBy != null ? opacityBy : scatterplot.get('opacityBy'),
                 opacity: opacityValues != null ? opacityValues : scatterplot.get('opacity'),
                 pointSize: pointSize != null ? pointSize : scatterplot.get('pointSize'),
@@ -173,18 +170,22 @@ export default function Scatterplot() {
     const [embeddingOptions, setEmbeddingOptions] = useState(null);
 
     const [legendVisibility, setLegendVisibility] = useState("visible");
+    const [pointColorScaling, setPointColorScaling] = useState(1);
     const [kNeighbors, setkNeighbors] = useState(50);
+
+    // POINT COLOR
     const [pointColorOptions, setPointColorOptions] = useState(null);
     const [selectedPointColor, setSelectedPointColor] = useState("initialPointColors");
     const [pointColors, setPointColors] = useState(
         {
             "values": 0,
             "encoded_values": 0,
-            "colorMap": { "none": "#444444" },
             "type": "categorical",
             "group": "metadata"
         }
     );
+    const [colorMap, setColorMap] = useState({ "ticks": ["none"], "colors": ["#444444"] });
+
     const [pointSize, setPointSize] = useState(5);
     const [opacities, setOpacities] = useState(null);
     const [scatterLoaded, setScatterLoaded] = useState(false);
@@ -200,6 +201,38 @@ export default function Scatterplot() {
         console.log(`handleDatasetSelect ${newDatasetName}`)
         setDatasetName(newDatasetName);
         loadDatasetConfiguration(newDatasetName, setIsLoadingData);
+    }
+
+    const handlePointColorScaling = (pointColorScaling) => {
+        // change pointColor["encoded_values"] to log scale
+        setPointColorScaling(pointColorScaling);
+        if (pointColors["type"] == "continuous") {
+            const newPointColor = { ...pointColors };
+
+            if (!newPointColor.hasOwnProperty("original_encoded_values")) {
+                newPointColor["original_encoded_values"] = pointColors["encoded_values"];
+            }
+            newPointColor["encoded_values"] = newPointColor["original_encoded_values"].map(v => Math.pow(v, pointColorScaling));
+            let numTicks = colorMap["ticks"].length;
+            let range_diff = Math.max(...colorMap["ticks"]) - Math.min(...colorMap["ticks"]);
+            let newTickPositions = Array.from({ length: numTicks }, (_, i) => i / (numTicks - 1));
+            newTickPositions = newTickPositions.map(v => { return Math.pow(v, 1/pointColorScaling) * range_diff + Math.min(...colorMap["ticks"])});
+
+            let newColorMap = {};
+            newColorMap["ticks"] = newTickPositions
+            newColorMap["colors"] = colorMap["colors"];
+
+            setColorMap(newColorMap);
+            setPointColors(newPointColor);
+            showEmbedding({
+                embedding: activeEmbedding,
+                pointColor: newPointColor,
+                opacities: opacities,
+                colorMap: newColorMap,
+                useTransition: false,
+                preventFilterReset: true
+            });
+        }
     }
 
     const loadDatasetConfiguration = (datasetName, setLoadingFunction) => {
@@ -248,7 +281,10 @@ export default function Scatterplot() {
                                         filteredPoints = [...Array(numPoints).keys()];
                                         setOpacities(new Array(numPoints).fill(0));
                                         console.log(`number of points ${numPoints}`)
+                                        setColorMap(pointColors["colorMap"]);
+                                        delete pointColors["colorMap"];
                                         setPointColors(pointColors);
+                                        setPointColorScaling(1.0);
                                         setPointSize(getPointSize(numPoints));
                                         console.log("Finished loading data")
                                         setLoadingFunction(false);
@@ -286,15 +322,19 @@ export default function Scatterplot() {
         console.log(`handlePointColorSelect ${newPointColor}`)
         getPointColors(embeddingName, newPointColor, setBackendStatus)
             .then((res) => {
-                setSelectedPointColor(newPointColor);
-                setPointColors(res);
                 showEmbedding({
                     embedding: activeEmbedding,
                     pointColor: res,
+                    colorMap: res["colorMap"],
                     opacities: opacities,
                     useTransition: false,
                     preventFilterReset: false
                 });
+                setSelectedPointColor(newPointColor);
+                setColorMap(res["colorMap"]);
+                delete res["colorMap"];
+                setPointColors(res);
+                setPointColorScaling(1.0);
             })
     }
 
@@ -308,6 +348,7 @@ export default function Scatterplot() {
                         showEmbedding({
                             embedding: activeEmbedding,
                             pointColor: pointColors,
+                            colorMap: colorMap,
                             opacities: binary_neighbors,
                             useTransition: false,
                             preventFilterReset: true,
@@ -353,18 +394,23 @@ export default function Scatterplot() {
                         .then((res) => {
                             if ("none" in res["colorMap"]) {
                                 setSelectedPointColor("none");
+                                setPointColorScaling(1.0);
                             }
-                            setPointColors(res);
                             showEmbedding({
                                 embedding: newEmbedding,
                                 pointColor: res,
+                                colorMap: res["colorMap"],
                                 opacities: opacities,
                             });
+                            setColorMap(res["colorMap"]);
+                            delete res["colorMap"];
+                            setPointColors(res);
                         })
                 } else {
                     showEmbedding({
                         embedding: newEmbedding,
                         pointColor: pointColors,
+                        colorMap: colorMap,
                         opacities: opacities,
                     });
                 }
@@ -397,6 +443,7 @@ export default function Scatterplot() {
             showEmbedding({
                 embedding: activeEmbedding,
                 pointColor: pointColors,
+                colorMap: colorMap,
                 opacities: opacities,
                 pointSize: pointSize,
                 useTransition: false,
@@ -485,6 +532,7 @@ export default function Scatterplot() {
                     scatterplot={scatterplotState}
                     selectedPointColor={selectedPointColor}
                     pointColors={pointColors}
+                    colorMap={colorMap}
                     pointColorOptions={pointColorOptions}
                     pointColorOnChange={handlePointColorSelect}
                     pointSize={pointSize}
@@ -499,6 +547,8 @@ export default function Scatterplot() {
                     metricOnChange={setMetric}
                     showUnstablePoints={showUnstablePoints}
                     handleHDNeighbors={handleHDNeighbors}
+                    pointColorScaling={pointColorScaling}
+                    handlePointColorScaling={handlePointColorScaling}
                 >
                     {/* Dataset */}
                     <div className="flex flex-col items-left my-2 justify-between">
@@ -515,14 +565,14 @@ export default function Scatterplot() {
                     {
                         pointColors["type"] === "categorical" ?
                             <Legend
-                                colormap={pointColors["colorMap"]}
+                                colormap={colorMap}
                                 title={selectedPointColor}
                                 filter={(filterValue) => filterPoints(pointColors["values"], filterValue)}
                                 unfilter={(filterValue) => unfilterPoints(pointColors["values"], filterValue)}
                                 visibility={legendVisibility}
                             /> :
                             <Colorbar
-                                colormap={pointColors["colorMap"]}
+                                colormap={colorMap}
                                 title={selectedPointColor}
                                 visibility={legendVisibility}
                             />

@@ -111,6 +111,7 @@ export function SettingsMenu(props) {
     scatterplot,
     selectedPointColor,
     pointColors,
+    colorMap,
     pointColorOptions,
     pointColorOnChange,
     pointSize,
@@ -125,6 +126,8 @@ export function SettingsMenu(props) {
     metricOnChange,
     showUnstablePoints,
     handleHDNeighbors,
+    pointColorScaling,
+    handlePointColorScaling,
     children } = props
 
   const [visibility, setVisibility] = useState('visible')
@@ -272,6 +275,7 @@ export function SettingsMenu(props) {
               scatterplot={scatterplot}
               selectedPointColor={selectedPointColor}
               pointColors={pointColors}
+              colorMap={colorMap}
               pointColorOptions={pointColorOptions} />
 
             {/* Legend */}
@@ -294,6 +298,22 @@ export function SettingsMenu(props) {
                 </div>
               </div>
             </Switch.Group>
+
+            {/* Point Color Scaling */}
+            {/* <div className='flex flex-col w-full items-left pr-2 justify-between'>
+              <label className="text-sm text-gray-500 w-fit min-w-fit" htmlFor="pointSizeSlider">scale point color with exponent {pointColorScaling}</label>
+              <input
+                className="transparent h-[2px] cursor-pointer appearance-none 
+                border-transparent bg-neutral-300 mb-2 mt-3"
+                type="range"
+                min={0.1}
+                max={5}
+                step={0.1}
+                value={pointColorScaling}
+                onChange={(event) => handlePointColorScaling(+event.target.value)}
+                id="pointSizeSlider"
+                disabled={pointColors["type"] == "categorical" ? true : false} />
+            </div> */}
 
 
             {/* Neighbors */}

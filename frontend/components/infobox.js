@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { HoverNote } from "./utils";
+import { HoverNote, prettyPrint } from "./utils";
 import { Switch } from '@headlessui/react'
 import GroupedSelect from "./groupedSelect";
 
@@ -20,6 +20,7 @@ export function Infobox(props) {
         scatterplot,
         selectedPointColor,
         pointColors,
+        colorMap,
         pointColorOptions,
         ...other } = props
 
@@ -84,17 +85,6 @@ export function Infobox(props) {
         }
     }
 
-    const prettyPrint = (value) => {
-        if (typeof value === 'string') {
-            return value;
-        } else if (typeof value === 'number') {
-            return value.toPrecision(3);
-        } else {
-            // if it's not a string or a number, just return the value
-            return value;
-        }
-    }
-
     const handlePointOut = () => {
         setHoverState(prevState => ({
             ...prevState,
@@ -121,7 +111,7 @@ export function Infobox(props) {
 
     const getHoverColor = (pointId) => {
         if (pointColors["type"] === "categorical") {
-            return pointColors["colorMap"][pointColors["values"][pointId]];
+            return colorMap[pointColors["values"][pointId]];
         } else {
             return ("#e9e9e9");
         }
