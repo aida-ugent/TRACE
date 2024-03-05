@@ -43,18 +43,18 @@ def tsne_exaggeration(
 ):
     embeddings = {}
     start = time.time()
-    landmark_knn_index = openTSNE.affinity.get_knn_index(
+    knn_index = openTSNE.affinity.get_knn_index(
         data,
         "annoy",
         int(3 * perplexity),
-        "euclidean",
+        hd_metric,
         n_jobs=8,
         random_state=None,
         verbose=True,
     )
 
     print(f"Computing affinities with perplexity {perplexity}...")
-    # computing coarse embedding
+    # computing embedding
     affinities = openTSNE.affinity.PerplexityBasedNN(
         perplexity=perplexity,
         method="annoy",
@@ -62,7 +62,7 @@ def tsne_exaggeration(
         random_state=random_state,
         metric=hd_metric,
         verbose=True,
-        knn_index=landmark_knn_index,
+        knn_index=knn_index,
     )
 
     # initialization
@@ -81,7 +81,7 @@ def tsne_exaggeration(
         **kwargs,
     )
 
-    # optimize coarse embedding
+    # optimize embedding
     for exag, n_iter in exag_iter:
         embedding.optimize(n_iter=n_iter, exaggeration=exag, inplace=True)
         embeddings[exag] = np.asarray(embedding).copy()
