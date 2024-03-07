@@ -87,24 +87,24 @@ def get_hd_centroid_distance_df(
     return pd.DataFrame(distance_dict)
 
 
-def sample_cluster_points(data: np.ndarray, labels: np.ndarray, max_samples: int):
+def sample_cluster_points(data: np.ndarray, labels: np.ndarray, num_samples: int):
     """Sampling points from the HD data space using the Kmeans++ algorithm.
 
     Args:
         data (np.ndarray): HD data
         labels (np.ndarray): sampling at least one point from each cluster
-        max_samples (int): maximum number of samples.
+        num_samples (int): maximum number of samples.
 
     Returns:
         np.ndarray: sampled points
     """
     centroids = []
-    max_samples = min(max_samples, data.shape[0] * 0.1)
+    num_samples = min(num_samples, data.shape[0] * 0.1)
 
     for label in labels.unique():
         ind = list(np.nonzero(labels == label)[0])
         # how many samples to take from this cluster
-        n_samples = max(1, int(max_samples * (len(ind) / data.shape[0])))
+        n_samples = max(1, int(num_samples * (len(ind) / data.shape[0])))
         # Calculate seeds from k-means++
         _, indices = kmeans_plusplus(data[ind, :], n_clusters=n_samples, random_state=0)
         orig_indices = np.array(ind)[indices]
@@ -112,18 +112,18 @@ def sample_cluster_points(data: np.ndarray, labels: np.ndarray, max_samples: int
     return np.asarray(centroids)
 
 
-def sample_landmarks(data: np.ndarray, max_samples: int):
+def sample_landmarks(data: np.ndarray, num_samples: int):
     """Sampling points from the HD data space using the Kmeans++ algorithm.
 
     Args:
         data (np.ndarray): HD data
-        max_samples (int): maximum number of samples.
+        num_samples (int): maximum number of samples.
 
     Returns:
         np.ndarray: sampled points
     """
-    max_samples = min(max_samples, data.shape[0])
-    _, indices = kmeans_plusplus(data, n_clusters=max_samples, random_state=0)
+    num_samples = min(num_samples, data.shape[0])
+    _, indices = kmeans_plusplus(data, n_clusters=num_samples, random_state=0)
     return np.asarray(indices)
 
 

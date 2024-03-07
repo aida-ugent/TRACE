@@ -82,12 +82,6 @@ class Dataset:
             if os.path.isfile(adata):
                 self.filepath = adata
                 self.adata = ad.read_h5ad(adata, backed="r")
-                if self.verbose:
-                    print(
-                        f"\nLoaded {self.name} data.\n"
-                        + f"Embeddings {self.get_embedding_names()}.\n"
-                        + f"Quality features {self.get_quality_features()}."
-                    )
             else:
                 raise FileNotFoundError(f"File {adata} not found.")
         elif isinstance(adata, ad.AnnData):
@@ -95,6 +89,12 @@ class Dataset:
             self.hd_data_key = hd_data_key
 
         self.__check_andata()
+        if self.verbose:
+            print(
+                f"\nLoaded {self.name} data.\n"
+                + f"Embeddings {self.get_embedding_names()}.\n"
+                + f"Quality features {self.get_quality_features()}."
+            )
 
     def __check_andata(self):
         """
@@ -110,6 +110,20 @@ class Dataset:
         # keep list of embeddings in adata.uns['methods]
         if "methods" not in self.adata.uns_keys():
             self.adata.uns["methods"] = dict()
+
+            # add existing embeddings to adata.uns['methods']
+            for name in self.adata.obsm_keys():
+                emb_dim = self.adata.obsm[name].shape[1]
+                if emb_dim == 2:
+                    self.adata.uns["methods"]["other"] = self.adata.uns["methods"].get(
+                        "other", []
+                    ) + [name]
+                elif "pca" in name or "PCA" in name:
+                    # add first two dimensions as extra embedding
+                    self.adata.obsm[name + "_2D"] = self.adata.obsm[name][:, :2]
+                    self.adata.uns["methods"]["other"] = self.adata.uns["methods"].get(
+                        "other", []
+                    ) + [name + "_2D"]
 
         # check that all embeddings are in obsm
         for name in self.get_embedding_names():
@@ -155,7 +169,9 @@ class Dataset:
             raise ValueError(f"Embedding {name} already exists.")
 
         if category is None:
-            self.adata.uns["methods"]["other"] = [name]
+            self.adata.uns["methods"]["other"] = self.adata.uns["methods"].get(
+                "other", []
+            ) + [name]
         elif category in self.adata.uns["methods"]:
             self.adata.uns["methods"][category].append(name)
         else:
@@ -251,7 +267,13 @@ class Dataset:
 
         if filename is None:
             if self.filepath is None:
-                filename = self.name + f"_{time.strftime('%Y%m%d_%H%M%S')}.h5ad"
+                filename = self.name.replace(" ", "_") + ".h5ad"
+
+                if os.path.isfile(filename):
+                    filename = (
+                        self.name.replace(" ", "_")
+                        + f"_{time.strftime('%Y%m%d_%H%M%S')}.h5ad"
+                    )
             else:
                 filename = (
                     os.path.splitext(os.path.basename(self.filepath))[0]
@@ -259,14 +281,15 @@ class Dataset:
                 )
                 filename = os.path.join(os.path.dirname(self.filepath), filename)
 
+        if self.verbose:
+            print(f"Saving dataset to {filename}")
+
         self.adata.write(
             filename,
             compression="gzip",
         )
-        if self.verbose:
-            print(f"Saved dataset to {filename}")
 
-    def get_annoy_index(self, metric: str):
+    def __get_annoy_index(self, metric: str):
         """
         Builds an Annoy index for the dataset using the specified metric.
 
@@ -411,6 +434,33 @@ class Dataset:
     ## Quality Score Functions ##
     #############################
 
+    def compute_quality(self):
+        """
+        Compute all quality measures for the dataset.
+        """
+        # this will take a while, the user should be updated
+        self.verbose = True
+        print(f"Quality measures for {self.name}...")
+        start_time = time.time()
+
+        num_samples = int(
+            10 + 20 * (np.log10(self.adata.n_obs) - 3)
+            if self.adata.n_obs > 1000
+            else 10
+        )
+        neighborhood_sizes = [5 * num_samples, num_samples]
+
+        self.precompute_HD_neighbors(maxK=max(neighborhood_sizes))
+        self.compute_neighborhood_preservation(neighborhood_sizes=neighborhood_sizes)
+        self.compute_global_distance_correlation()
+
+        self.compute_random_triplet_accuracy(num_triplets=num_samples)
+        self.compute_point_stability(num_samples=num_samples)
+
+        self.align_embeddings(reference_embedding=self.get_embedding_names()[0])
+        print(f"Done in {time.time()-start_time:.2f}s.")
+        self.save_adata()
+
     def print_quality(self):
         """
         Print the quality of the dataset for each method.
@@ -456,14 +506,14 @@ class Dataset:
                 indices=range(self.adata.n_obs),
                 k=maxK,
                 metric=metric,
-                filepath=self.get_annoy_index(metric),
+                filepath=self.__get_annoy_index(metric),
                 exact=exact,
             )
             if self.verbose:
                 print(f"Done ({time.time()-start_time:.2f}s).")
 
-        if os.path.isfile(self.get_annoy_index(metric)):
-            os.remove(self.get_annoy_index(metric))
+        if os.path.isfile(self.__get_annoy_index(metric)):
+            os.remove(self.__get_annoy_index(metric))
 
     def get_HD_neighbors(self, k: int, metric: str, indices: np.ndarray):
         """
@@ -494,7 +544,7 @@ class Dataset:
                 indices=indices,
                 k=k,
                 metric=metric,
-                filepath=self.get_annoy_index(metric),
+                filepath=self.__get_annoy_index(metric),
             )
 
     def compute_neighborhood_preservation(
@@ -551,12 +601,36 @@ class Dataset:
     def compute_global_distance_correlation(
         self,
         hd_metric: str = None,
-        max_landmarks: int = 1000,
+        max_landmarks: int = 10000,
         LD_landmark_neighbors: bool = True,
+        sampling_method: str = "kmeans++",
     ):
+        """
+        Computes the quality scores for embeddings based on global distance correlation.
+        It selects a subset of landmarks and computes the distance correlation between the
+        low-dimensional and high-dimensional distances. Each point will be assigned the
+        correlation score of the closest landmark.
+
+        Args:
+            hd_metric (str, optional): Metric to compute HD distances. Defaults to None.
+            max_landmarks (int, optional): The maxium number of landmarks. Defaults to 10000.
+            LD_landmark_neighbors (bool, optional): If the closest landmark is
+                defined in LD space (True) or HD space (False). Defaults to True.
+            sampling_method (str, optional): How to sample the landmarks. Defaults to "kmeans++".
+                Options ["kmeans++", "random"]
+        """
         start_time = time.time()
         if hd_metric is None:
             hd_metric = self.hd_metric
+
+        if sampling_method not in ["kmeans++", "random"]:
+            raise ValueError(
+                f"Sampling method {sampling_method} not found. \
+                             Options are ['kmeans++', 'random']."
+            )
+
+        num_samples = 100 if self.adata.n_obs < 1000 else int(self.adata.n_obs**0.7)
+        num_samples = min(num_samples, max_landmarks)
 
         # get embeddings for which the quality score is not yet computed
         embedding_names = [
@@ -576,10 +650,15 @@ class Dataset:
             print("Computing landmark distance correlation...", end="")
 
         if "landmark_indices" not in self.adata.uns_keys():
-            landmark_indices = centroid_correlation.sample_landmarks(
-                data=self.get_HD_data(),
-                max_samples=max_landmarks,
-            )
+            if sampling_method == "kmeans++":
+                landmark_indices = centroid_correlation.sample_landmarks(
+                    data=self.get_HD_data(),
+                    num_samples=num_samples,
+                )
+            else:
+                landmark_indices = np.random.choice(
+                    self.adata.n_obs, size=num_samples, replace=False
+                )
             self.adata.uns["landmark_indices"] = landmark_indices
 
         hd_landmark_distances = centroid_correlation.compute_pairwise_distance(
@@ -658,7 +737,10 @@ class Dataset:
                 Values between 5 and 50 are typically sufficient. Defaults to 20.
         """
         if self.verbose:
-            print(f"Computing stability scores with num_samples={num_samples} and alpha={alpha}...")
+            print(
+                f"Computing stability scores with num_samples={num_samples} and alpha={alpha}...",
+                flush=True,
+            )
 
         if embedding_keys is None:
             embedding_keys = self.get_embedding_names()
@@ -678,7 +760,7 @@ class Dataset:
             print(f"Done ({time.time()-start_time:.2f}s).")
 
         # add stability to metadata
-        self.add_metadata({"stability": stability})
+        self.add_metadata({"point stability": stability})
 
     def delete_quality_scores(self, quality_scores: list[str]):
         """
@@ -732,5 +814,5 @@ class Dataset:
                             hd_metric=hd_metric,
                         )
                     )
-            if self.verbose:
-                print(f"Done ({time.time()-start_time:.2f}s).")
+        if self.verbose:
+            print(f"Done ({time.time()-start_time:.2f}s).")
