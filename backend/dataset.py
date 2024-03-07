@@ -10,6 +10,7 @@ import utils
 from sklearn.neighbors import NearestNeighbors
 from alignment import umeyama_alignment
 import evaluation.triplet_accuracy as triplet_accuracy
+from evaluation.stability import stability_across_embeddings
 from collections.abc import Mapping
 
 
@@ -128,7 +129,7 @@ class Dataset:
                 self.adata.uns[name] = {"quality": {}}
             elif "quality" not in self.adata.uns[name].keys():
                 self.adata.uns[name]["quality"] = {}
-                
+
         if self.hd_metric is None and len(self.adata.uns["hd_neighbors"].keys()) > 0:
             self.hd_metric = list(self.adata.uns["hd_neighbors"].keys())[0]
 
@@ -238,7 +239,6 @@ class Dataset:
             return self.adata.obsm[self.hd_data_key]
         else:
             return np.asarray(self.adata.X)
-        
 
     def save_adata(self, filename=None):
         """
@@ -642,6 +642,43 @@ class Dataset:
             distance_to_landmarks, self.adata.uns["closestLandmarks"], axis=0
         )
         return distances
+
+    def compute_point_stability(
+        self, embedding_keys: list[str] = None, num_samples: int = 50, alpha: float = 20
+    ):
+        """
+        Compute the point stability for the given embeddings.
+
+        Args:
+            embedding_keys (list[str], optional): Subset of embeddings to
+                compute the point stability for. Defaults to None.
+            num_samples (int, optional): Number of samples to use for the distances
+                variance computation. Defaults to 50.
+            alpha (float, optional): Exponent for the stability calculation.
+                Values between 5 and 50 are typically sufficient. Defaults to 20.
+        """
+        if self.verbose:
+            print(f"Computing stability scores with num_samples={num_samples} and alpha={alpha}...")
+
+        if embedding_keys is None:
+            embedding_keys = self.get_embedding_names()
+        else:
+            # check if all embeddings are available
+            for key in embedding_keys:
+                if key not in self.get_embedding_names():
+                    raise ValueError(f"Embedding {key} not found.")
+
+        embeddings = [self.adata.obsm[key] for key in embedding_keys]
+
+        start_time = time.time()
+        stability = stability_across_embeddings(
+            embeddings=embeddings, num_samples=num_samples, alpha=alpha
+        )
+        if self.verbose:
+            print(f"Done ({time.time()-start_time:.2f}s).")
+
+        # add stability to metadata
+        self.add_metadata({"stability": stability})
 
     def delete_quality_scores(self, quality_scores: list[str]):
         """
