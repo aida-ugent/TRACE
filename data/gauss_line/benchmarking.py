@@ -1,8 +1,10 @@
 import numpy as np
 import scanpy as sc
 import sys
-import matplotlib.pyplot as plt
 import time
+import datetime
+import pandas as pd
+
 sys.path.insert(1, "../../backend/")
 from tsne import compute_tsne_series
 from dataset import Dataset as TraceData
@@ -36,33 +38,52 @@ def gauss_clusters(
     return X, y
 
 
+def second_to_str(sec):
+    str_tm = str(datetime.timedelta(seconds=sec))
+    if "day" in str_tm:
+        day = str_tm.split(",")[0]
+        str_tm = str_tm.split(",")[1]
+    else:
+        day = "0 day "
+    hour, minute, second = str_tm.split(":")
+    return f"{day}{hour} hour {minute} min {second} sec"
+
+
 if __name__ == "__main__":
     print("Running Gaussian Line Benchmarking")
 
-    data_sizes = [1e2, 1e3, 1e4, 1e5, 1e6]
-    timings_tsne = []
-    timings_quality = []
+    data_sizes = [1e3, 1e4]
+    timings = pd.DataFrame(
+        columns=["pca_s", "tsne_s", "quality_s", "quality_readable"], index=data_sizes
+    )
 
     for size in data_sizes:
         size = int(size)
         print(f"Dataset size: {size}")
         data, labels = gauss_clusters(pts_cluster=int(size / 10))
 
+        start_pca = time.time()
         pca_emb = sc.pp.pca(data, n_comps=2, zero_center=True)
+        timings.loc[size]["pca_s"] = time.time() - start_pca
 
         start_tsne = time.time()
         sampling_frac = 1 if size < 100000 else int(1 / (10 * (np.log10(size) - 3)))
-        tsne_embs = compute_tsne_series(
-            data=data,
-            coarse_exag_iter=[(12, 200), (5, 200)],
-            fine_exag_iter=[(10, 200), (5, 200), (3, 200), (1, 200)],
-            hd_metric="euclidean",
-            init=pca_emb,
-            sampling_frac=sampling_frac,
-            smoothing_perplexity=30,
-            random_state=42,
-        )
-        timings_tsne.append(time.time() - start_tsne)
+        # tsne_embs = compute_tsne_series(
+        #     data=data,
+        #     coarse_exag_iter=[(12, 200), (5, 200)],
+        #     fine_exag_iter=[(10, 200), (5, 200), (3, 200), (1, 200)],
+        #     hd_metric="euclidean",
+        #     init=pca_emb,
+        #     sampling_frac=sampling_frac,
+        #     smoothing_perplexity=30,
+        #     random_state=42,
+        # )
+        tsne_embs = {}
+        for t in range(4):
+            tsne_embs[t] = np.random.multivariate_normal(
+                size=size, mean=np.zeros(2), cov=np.eye(2)
+            )
+        timings.loc[size]["tsne_s"] = time.time() - start_tsne
 
         trace_data = TraceData(
             hd_data=data,
@@ -83,11 +104,12 @@ if __name__ == "__main__":
             )
         start_quality = time.time()
         trace_data.compute_quality()
-        timings_quality.append(time.time() - start_quality)
-        
-        # stack the timings with size and save using numpy
-        np.savetxt("gauss_line_benchmarking.csv", 
-                np.column_stack((data_sizes, timings_tsne, timings_quality)),
-                header="size,tsne,quality",
-                delimiter=",")
-    plt.plot(data_sizes, timings_tsne, label="Benchmarking")
+        timings.loc[size]["quality_s"] = time.time() - start_quality
+        timings.loc[size]["quality_readable"] = second_to_str(
+            timings.loc[size]["quality_s"]
+        )
+        timings.to_csv(
+            "gauss_line_benchmarking.csv",
+            float_format="%.2f",
+            index_label="dataset_size",
+        )
