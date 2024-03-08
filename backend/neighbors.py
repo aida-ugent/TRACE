@@ -5,7 +5,8 @@ import time
 import sklearn
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
-
+import multiprocessing.dummy as mp 
+from numba import jit, prange
 
 def build_annoy_index(
     data: np.ndarray,
@@ -72,6 +73,9 @@ def get_nearest_neighbors(
     Returns:
         np.ndarray: An array of shape (len(indices), k) containing the indices of the k nearest neighbors for each data point.
     """
+    if k >= data.shape[0]:
+        raise ValueError("k must be less than the number of data points")
+    
     if exact:
         return get_exact_neighbors(
             data,
@@ -89,18 +93,24 @@ def get_nearest_neighbors(
             )
 
         data = np.asarray(data)
-        d = data.shape[1]
-        u = AnnoyIndex(d, metric)
+        u = AnnoyIndex(data.shape[1], metric)
         u.load(filepath)
 
         nbrs = np.empty((len(indices), k), dtype=int)
 
-        if len(indices) == 1:
-            nbrs[0, :] = u.get_nns_by_item(indices[0], k + 1)[1:]
+        if len(indices) < 1000:
+            for i in range(len(indices)):
+                nbrs[i, :] = u.get_nns_by_item(indices[i], k + 1)[1:]
         else:
-            assert k < data.shape[0]
-            for i, point in enumerate(tqdm(indices)):
-                nbrs[i, :] = u.get_nns_by_item(point, k + 1)[1:]
+            def add_nbrs(i):
+                nbrs[i, :] = u.get_nns_by_item(indices[i], k + 1)[1:]
+
+            p=mp.Pool(8)
+            p.map(add_nbrs,range(len(indices)))
+            p.close()
+            p.join()
+        
+        u.unload()
         return nbrs
 
 
@@ -243,13 +253,32 @@ def neighborhood_preservation_multi(
     )
 
     for i, size in enumerate(neighborhood_sizes):
-        for j in range(embedding.shape[0]):
-            preservation[j, i] = (
-                np.intersect1d(hd_neighbors[j, :size], emb_neighbors[j, :size]).shape[0]
-                / size
-            )
+        preservation[:, i] = intersection_size(hd_neighbors, emb_neighbors, size)
 
     return preservation
+
+
+@jit(nopython=True, parallel=True)
+def intersection_size(hd_neighbors: np.ndarray, emb_neighbors: np.ndarray, k: int):
+    """
+    Computes the intersection size between the nearest neighbors of the high-dimensional and low-dimensional datasets.
+
+    Args:
+        hd_neighbors (np.ndarray): The nearest neighbors of the high-dimensional dataset.
+        emb_neighbors (np.ndarray): The nearest neighbors of the low-dimensional dataset.
+        k (int): The number of nearest neighbors to consider.
+
+    Returns:
+        np.ndarray: The intersection size for each point.
+    """
+    n = hd_neighbors.shape[0]
+    intersection = np.zeros(n)
+    for i in prange(n):
+        intersection[i] = (
+                np.intersect1d(hd_neighbors[i, :k], emb_neighbors[i, :k]).shape[0]
+                / k
+            )
+    return intersection
 
 
 def unstable_points(embA: np.ndarray, embB: np.ndarray, maxFraction: float, k: int):

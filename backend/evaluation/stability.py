@@ -1,5 +1,6 @@
 import numpy as np
 from tqdm import tqdm
+from numba import jit, prange
 
 # This stability measure is based on the paper "Dynamic visualization of
 # high-dimensional data" from Eric Sun et al. (2023)
@@ -33,38 +34,33 @@ def stability_across_embeddings(embeddings, num_samples=50, alpha=20):
     stability = stability_from_variance(variances, alpha)
     return stability
 
-
+@jit(nopython=True, parallel=True)
 def variance_across_embeddings(embeddings, num_samples=50):
     """
     Computes the variance of points in different embeddings using a random sample of points.
 
     Args:
-        embeddings (ndarray (e, n, 2)): Two-dimensional embeddings for all data-points as basis for point variance.
-        samples (int): Number of samples to use for the variance calculation. Defaults to 50.
+        embeddings (ndarray (e, num_samples, 2)): Two-dimensional embeddings for all data-points as basis for point variance.
+        num_samples (int): Number of samples to use for the variance calculation. Defaults to 50.
     """
 
     num_embeddings = len(embeddings)
     n = embeddings[0].shape[0]
-    embeddings = np.asarray(embeddings)
+    embeddings = np.ascontiguousarray(embeddings)
     variance = np.zeros((n))
     # the distances are normalized by the average distances over all points and embeddings
     sum_of_distances = 0
 
-    for i in tqdm(range(n)):
+    for i in prange(n):
         sample = np.random.choice(n, num_samples, replace=False)
-
-        distances = np.linalg.norm(
-            embeddings.take(sample, axis=1)
-            - embeddings.take(i, axis=1).reshape(num_embeddings, 1, -1),
-            axis=2,
-        )
+        distances = np.sqrt(np.sum((embeddings[:, sample, :] - embeddings[:, np.repeat(i, num_samples), :]) ** 2, axis=2))
+        
         sum_of_distances += np.sum(distances)
+        distances -= np.sum(distances, axis=0) / num_samples
 
-        # normalize the distances over embeddings
-        distances -= np.mean(distances, axis=0)
-
-        # compute the variance of the distances
-        variance[i] = np.sum(np.var(distances, axis=0, ddof=1))
+        # compute the variance of distances along the samples
+        embedding_means = np.sum(distances, axis=0) / (num_embeddings - 1)
+        variance[i] = np.sum(np.sum((distances - embedding_means) ** 2, axis=0) / (num_embeddings - 1))
 
     # Normalize the variance scores
     variance /= num_samples
