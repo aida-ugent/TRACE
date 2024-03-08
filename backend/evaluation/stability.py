@@ -17,7 +17,7 @@ def stability_across_embeddings(embeddings, num_samples=50, alpha=20):
     parameters) as basis for the stability calculation.
 
     Args:
-        embeddings (_type_): _description_
+        embeddings (ndarray (e, n, 2)): Two-dimensional embeddings for all data-points as basis for point variance.
         num_samples (int, optional): _description_. Defaults to 50.
         alpha (float, optional): Exponent for the stability calculation.
             Values between 5 and 50 are typically sufficient. Defaults to 20.
@@ -29,7 +29,7 @@ def stability_across_embeddings(embeddings, num_samples=50, alpha=20):
     if alpha < 0:
         raise ValueError("The alpha parameter must be greater than 0.")
 
-    variances = variance_across_embeddings(embeddings, num_samples)
+    variances = variance_across_embeddings(np.asarray(embeddings), num_samples)
     stability = stability_from_variance(variances, alpha)
     return stability
 
@@ -39,29 +39,25 @@ def variance_across_embeddings(embeddings, num_samples=50):
     Computes the variance of points in different embeddings using a random sample of points.
 
     Args:
-        embeddings (list of ndarray): List of embeddings as basis for point variance.
+        embeddings (ndarray (e, n, 2)): Two-dimensional embeddings for all data-points as basis for point variance.
         samples (int): Number of samples to use for the variance calculation. Defaults to 50.
     """
 
     num_embeddings = len(embeddings)
     n = embeddings[0].shape[0]
-
+    embeddings = np.asarray(embeddings)
     variance = np.zeros((n))
     # the distances are normalized by the average distances over all points and embeddings
     sum_of_distances = 0
 
-    # Iterate through all points
     for i in tqdm(range(n)):
-        # sample random points
         sample = np.random.choice(n, num_samples, replace=False)
 
-        # compute distances of i to all points in the sample for all embeddings
-        distances = np.zeros((len(embeddings), num_samples))
-        for e in range(num_embeddings):
-            distances[e] = np.array(
-                [np.linalg.norm(embeddings[e][i] - embeddings[e][j]) for j in sample]
-            )
-
+        distances = np.linalg.norm(
+            embeddings.take(sample, axis=1)
+            - embeddings.take(i, axis=1).reshape(num_embeddings, 1, -1),
+            axis=2,
+        )
         sum_of_distances += np.sum(distances)
 
         # normalize the distances over embeddings
