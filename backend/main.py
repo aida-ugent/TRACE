@@ -88,15 +88,18 @@ def loadDataset(datasetName: str):
             raise HTTPException(
                 status_code=500, detail=f"Dataset {datasetName} not found"
             )
+    if dataset.adata.n_vars > 4000:
+        print(f"Warning: dataset has {dataset.adata.n_vars} features. Limiting to 4000.")
 
     point_color_options = {
         "metadata": dataset.get_metadata_features() + ["HD distances", "none"],
         "quality": dataset.get_quality_features(),
-        "features": dataset.adata.var.index.tolist(),
+        "features": dataset.adata.var.index.tolist()[0: 4000 if dataset.adata.n_vars > 4000 else dataset.adata.n_vars],
     }
     return {
         "dataset_name": datasetName,
         "metric_options": dataset.get_hd_metric_options(),
+        "max_neighbors": dataset.get_precomputed_neighbors_maxK(),
         "hd_metric": dataset.hd_metric,
         "dataset_info": dataset.description,
         "embedding_options": dataset.get_embedding_options(),
@@ -301,7 +304,10 @@ async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = No
         ticks = [f"{x:.2}" for x in ticks]
         colorMap = {"ticks": ticks, "colors": colors}
         if scale_continuous:
-            encoded_fvalues = (fvalues - range[0]) / (range[1] - range[0])
+            if range[1] - range[0] == 0:
+                encoded_fvalues = np.zeros((dataset.adata.n_obs,), dtype=int)
+            else:
+                encoded_fvalues = (fvalues - range[0]) / (range[1] - range[0])
         else:
             encoded_fvalues = fvalues
     res = {

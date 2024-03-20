@@ -13,9 +13,6 @@ import GroupedSelect from "./groupedSelect"
 import { getHDNeighbors } from "./api";
 import { saveAsPng } from './utils';
 
-// default options
-let maxNeighbors = 200;
-
 let filteredPoints = [];
 let numPoints;
 
@@ -193,6 +190,7 @@ export default function Scatterplot() {
     const [datasetInfo, setDatasetInfo] = useState("");
     const [selectedMetric, setMetric] = useState("angular");
     const [metricOptions, setMetricOptions] = useState([]);
+    const [maxNeighbors, setMaxNeighbors] = useState(0);
     const [datasetName, setDatasetName] = useState(null);
 
     const printCanvasRef = useRef(null);
@@ -253,6 +251,7 @@ export default function Scatterplot() {
                             .then(res => {
                                 setMetric(res["hd_metric"]);
                                 setMetricOptions(res["metric_options"].map(v => { return { value: v, label: v } }));
+                                setMaxNeighbors(res["max_neighbors"]);
                                 setDatasetInfo(res["dataset_info"]);
                                 setDatasetName(res["dataset_name"]);
                                 setEmbeddingOptions(res["embedding_options"])

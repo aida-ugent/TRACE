@@ -8,6 +8,7 @@ import anndata as ad
 import centroid_correlation
 import utils
 from sklearn.neighbors import NearestNeighbors
+from numba import set_num_threads, get_num_threads
 from alignment import umeyama_alignment
 import evaluation.triplet_accuracy as triplet_accuracy
 from evaluation.stability import stability_across_embeddings
@@ -33,6 +34,7 @@ class Dataset:
         hd_metric: str = None,
         description: str = None,
         verbose: bool = False,
+        n_jobs: int = 8,
         **kwargs,
     ):
         """
@@ -53,6 +55,8 @@ class Dataset:
         self.hd_data_key = hd_data_key
         self.filepath = filepath
         self.verbose = verbose
+        self.n_jobs = n_jobs
+        set_num_threads(n_jobs)
 
         self.hd_annoy_filepath = dict()
 
@@ -327,6 +331,12 @@ class Dataset:
             return list(self.adata.uns["hd_neighbors"].keys())
         else:
             return []
+        
+    def get_precomputed_neighbors_maxK(self):
+        if "hd_neighbors" in self.adata.uns.keys():
+            return min([v.shape[1] for v in self.adata.uns["hd_neighbors"].values()])
+        else:
+            return 0
 
     def get_embedding_options(self):
         """
@@ -441,14 +451,19 @@ class Dataset:
         # this will take a while, the user should be updated
         self.verbose = True
         print(f"Quality measures for {self.name}...")
+        print(f"NUMBA uses {get_num_threads()} threads")
         start_time = time.time()
 
-        num_samples = int(
-            10 + 20 * (np.log10(self.adata.n_obs) - 3)
-            if self.adata.n_obs > 1000
-            else 10
-        )
-        neighborhood_sizes = [5 * num_samples, num_samples]
+        if self.adata.n_obs > 50:
+            num_samples = int(
+                10 + 20 * (np.log10(self.adata.n_obs) - 3)
+                if self.adata.n_obs > 1000
+                else 10
+            )
+            neighborhood_sizes = [5 * num_samples, num_samples]
+        else:
+            num_samples = int(self.adata.n_obs / 2)
+            neighborhood_sizes = [num_samples]
 
         self.precompute_HD_neighbors(maxK=max(neighborhood_sizes))
         self.compute_neighborhood_preservation(neighborhood_sizes=neighborhood_sizes)
@@ -492,6 +507,7 @@ class Dataset:
             metric (str): The distance metric to use for computing neighbors.
             exact (bool, optional): Whether to compute exact neighbors or use an approximate algorithm. Defaults to False.
         """
+           
         if metric is None:
             metric = self.hd_metric
         if (
@@ -508,6 +524,7 @@ class Dataset:
                 metric=metric,
                 filepath=self.__get_annoy_index(metric),
                 exact=exact,
+                n_jobs=self.n_jobs,
             )
             if self.verbose:
                 print(f"Done ({time.time()-start_time:.2f}s).")
@@ -545,6 +562,7 @@ class Dataset:
                 k=k,
                 metric=metric,
                 filepath=self.__get_annoy_index(metric),
+                n_jobs=self.n_jobs,
             )
 
     def compute_neighborhood_preservation(
@@ -603,7 +621,7 @@ class Dataset:
         hd_metric: str = None,
         max_landmarks: int = 10000,
         LD_landmark_neighbors: bool = True,
-        sampling_method: str = "kmeans++",
+        sampling_method: str = "auto",
     ):
         """
         Computes the quality scores for embeddings based on global distance correlation.
@@ -616,18 +634,24 @@ class Dataset:
             max_landmarks (int, optional): The maxium number of landmarks. Defaults to 10000.
             LD_landmark_neighbors (bool, optional): If the closest landmark is
                 defined in LD space (True) or HD space (False). Defaults to True.
-            sampling_method (str, optional): How to sample the landmarks. Defaults to "kmeans++".
-                Options ["kmeans++", "random"]
+            sampling_method (str, optional): How to sample the landmarks. Default is "auto" which uses "kmeans++"
+                for data up to 10000 points and "random" otherwise. Options ["kmeans++", "random", "auto"]
         """
         start_time = time.time()
         if hd_metric is None:
             hd_metric = self.hd_metric
 
-        if sampling_method not in ["kmeans++", "random"]:
+        sampling_choices = ["kmeans++", "random", "auto"]
+        if sampling_method not in sampling_choices:
             raise ValueError(
                 f"Sampling method {sampling_method} not found. \
-                             Options are ['kmeans++', 'random']."
+                             Options are {sampling_choices}."
             )
+        if sampling_method == "auto":
+            if self.get_HD_data().shape[1] <= 10000:
+                sampling_method = "kmeans++"
+            else:
+                sampling_method = "random"
 
         num_samples = 100 if self.adata.n_obs < 1000 else int(self.adata.n_obs**0.7)
         num_samples = min(num_samples, max_landmarks)
@@ -647,9 +671,12 @@ class Dataset:
             return
 
         if self.verbose:
-            print("Computing landmark distance correlation...", end="")
+            print("Computing landmark distance correlation...", end="", flush=True)
 
         if "landmark_indices" not in self.adata.uns_keys():
+            if sampling_method == "kmeans++" and self.get_HD_data().shape[1] > 10000:
+                print(f"Sampling {num_samples} landmarks using kmeans++ for data of shape " 
+                      + f"{self.get_HD_data().shape} will take a while. Consider using sampling_method='random' instead.")
             if sampling_method == "kmeans++":
                 landmark_indices = centroid_correlation.sample_landmarks(
                     data=self.get_HD_data(),
@@ -669,7 +696,7 @@ class Dataset:
 
         for name in embedding_names:
             if self.verbose:
-                print(f"{name}, ", end="")
+                print(f"{name}, ", end="", flush=True)
             self.adata.uns[name]["quality"]["landmark distance correlation"] = (
                 centroid_correlation.compute_landmark_correlation(
                     ld_data=self.adata.obsm[name],
@@ -781,10 +808,12 @@ class Dataset:
             hd_metric = self.hd_metric
 
         if self.verbose:
-            print(f"Computing random triplet accuracy...", end="")
+            print(f"Computing random triplet accuracy with {num_triplets} per point...", flush=True)
         start_time = time.time()
 
         if same_triplets:
+            if self.verbose:
+                print(f"\tGetting HD triplets and their distances...", flush=True)
             labels, triplets = triplet_accuracy.compute_hd_triplets(
                 X=self.get_HD_data(),
                 num_triplets=num_triplets,
@@ -793,7 +822,7 @@ class Dataset:
             for name in self.get_embedding_names():
                 if "random triplet accuracy" not in self.adata.uns[name]["quality"]:
                     if self.verbose:
-                        print(f"{name}, ", end="")
+                        print(f"{name}, ", end="", flush=True)
                     self.adata.uns[name]["quality"]["random triplet accuracy"] = (
                         triplet_accuracy.get_triplet_accuracy(
                             Y=self.adata.obsm[name],
@@ -805,7 +834,7 @@ class Dataset:
             for name in self.get_embedding_names():
                 if "random triplet accuracy" not in self.adata.uns[name]["quality"]:
                     if self.verbose:
-                        print(f"{name}, ", end="")
+                        print(f"{name}, ", end="", flush=True)
                     self.adata.uns[name]["quality"]["random triplet accuracy"] = (
                         triplet_accuracy.random_triplet_eval(
                             X=self.get_HD_data(),

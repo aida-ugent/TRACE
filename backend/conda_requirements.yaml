@@ -13,6 +13,7 @@ dependencies:
   - fastapi
   - uvicorn
   - numpy
+  - numba
   - pandas
   - scanpy
   - python-annoy
@@ -22,3 +23,4 @@ dependencies:
   - pip:
     - glasbey
     - opentsne
+    - numba_progress

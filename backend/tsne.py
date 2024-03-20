@@ -39,8 +39,10 @@ def tsne_exaggeration(
     perplexity: int = 30,
     random_state: int = 42,
     return_affinities: bool = False,
+    n_jobs: int = -1,
     **kwargs,
 ):
+    n_jobs = 1 if data.shape[1] < 1000 else n_jobs
     embeddings = {}
     start = time.time()
     knn_index = openTSNE.affinity.get_knn_index(
@@ -48,7 +50,7 @@ def tsne_exaggeration(
         "annoy",
         int(3 * perplexity),
         hd_metric,
-        n_jobs=8,
+        n_jobs=n_jobs,
         random_state=None,
         verbose=True,
     )
@@ -58,7 +60,7 @@ def tsne_exaggeration(
     affinities = openTSNE.affinity.PerplexityBasedNN(
         perplexity=perplexity,
         method="annoy",
-        n_jobs=8,
+        n_jobs=n_jobs,
         random_state=random_state,
         metric=hd_metric,
         verbose=True,
@@ -75,7 +77,7 @@ def tsne_exaggeration(
     embedding = openTSNE.TSNEEmbedding(
         embedding=init,
         affinities=affinities,
-        n_jobs=8,
+        n_jobs=n_jobs,
         verbose=True,
         random_state=random_state,
         **kwargs,
@@ -83,7 +85,7 @@ def tsne_exaggeration(
 
     # optimize embedding
     for exag, n_iter in exag_iter:
-        embedding.optimize(n_iter=n_iter, exaggeration=exag, inplace=True)
+        embedding.optimize(n_iter=n_iter, exaggeration=exag, inplace=True, n_jobs=n_jobs)
         embeddings[exag] = np.asarray(embedding).copy()
         if fpath_prefix is not None:
             np.savetxt(
@@ -112,6 +114,7 @@ def compute_tsne_series(
     sampling_frac: float = 0.01,
     smoothing_perplexity: int = 30,
     random_state: int = 42,
+    n_jobs: int = -1,
     **kwargs,
 ):
     """
@@ -148,6 +151,7 @@ def compute_tsne_series(
         sample_ind = np.random.choice(n, size=sampling_size, replace=False)
         coarse_perp = math.ceil((n * sampling_frac) / 100)
 
+        print(f"Computing coarse t-SNE embedding with {sampling_size} out of {n} points...")
         coarse_embeddings, coarse_affinities = tsne_exaggeration(
             data=data[sample_ind, :],
             exag_iter=coarse_exag_iter,
@@ -157,6 +161,7 @@ def compute_tsne_series(
             perplexity=coarse_perp,
             random_state=random_state,
             return_affinities=True,
+            n_jobs=n_jobs,
             **kwargs,
         )
 
@@ -183,6 +188,7 @@ def compute_tsne_series(
         init=fine_init,
         perplexity=smoothing_perplexity,
         random_state=random_state,
+        n_jobs=n_jobs,
         **kwargs,
     )
     return fine_embeddings

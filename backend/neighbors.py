@@ -54,6 +54,7 @@ def get_nearest_neighbors(
     metric: str,
     filepath: str = None,
     exact: bool = False,
+    n_jobs = 8,
 ):
     """
     Get the nearest neighbors for given data points.
@@ -73,6 +74,7 @@ def get_nearest_neighbors(
     Returns:
         np.ndarray: An array of shape (len(indices), k) containing the indices of the k nearest neighbors for each data point.
     """
+    
     if k >= data.shape[0]:
         raise ValueError("k must be less than the number of data points")
     
@@ -104,8 +106,8 @@ def get_nearest_neighbors(
         else:
             def add_nbrs(i):
                 nbrs[i, :] = u.get_nns_by_item(indices[i], k + 1)[1:]
-
-            p=mp.Pool(8)
+                
+            p=mp.Pool(n_jobs)
             p.map(add_nbrs,range(len(indices)))
             p.close()
             p.join()
@@ -258,7 +260,7 @@ def neighborhood_preservation_multi(
     return preservation
 
 
-@jit(nopython=True, parallel=True)
+@jit(nopython=True, parallel=True, cache=True)
 def intersection_size(hd_neighbors: np.ndarray, emb_neighbors: np.ndarray, k: int):
     """
     Computes the intersection size between the nearest neighbors of the high-dimensional and low-dimensional datasets.
