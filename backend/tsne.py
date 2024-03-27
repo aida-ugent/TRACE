@@ -4,7 +4,7 @@ import os
 import time
 import math
 import anndata as ad
-
+from numpy.random import default_rng
 
 def prolongate_embedding(data, coarse_embedding, sampling_indices, coarse_knn_index):
     """Based on an embedding for the points in sampling_indices,
@@ -148,7 +148,7 @@ def compute_tsne_series(
     # only do coarse embedding if sampling frac is in (0, 1)
     if sampling_frac > 0 and sampling_frac < 1:
         sampling_size = math.ceil(n * sampling_frac)
-        sample_ind = np.random.choice(n, size=sampling_size, replace=False)
+        sample_ind = default_rng().choice(n, size=sampling_size, replace=False)
         coarse_perp = math.ceil((n * sampling_frac) / 100)
 
         print(f"Computing coarse t-SNE embedding with {sampling_size} out of {n} points...")
