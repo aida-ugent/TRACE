@@ -21,6 +21,7 @@ data/**/*.zip
 data/**/*.loom
 data/**/*.txt
 data/**/*.rds
+data/**/*.tsv
 **/*.ann
 
 # dependencies

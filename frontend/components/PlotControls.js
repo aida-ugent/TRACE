@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ReactSelect } from "./utils";
+import { ReactSelect, SavePointForm} from "./utils";
 import { SettingsButton, ChevronRightButton, AsyncButton, DefaultButton } from "./buttons";
 import { Switch } from '@headlessui/react'
 import { Infobox } from "./infobox";
@@ -205,7 +205,7 @@ export function SettingsMenu(props) {
   if (visibility == "visible") {
     return (
       <>
-        <div className="select-none right-0 w-1/4 min-w-[300px] h-screen max-h-screen bg-gray-100">
+        <div className="select-none right-0 w-1/4 min-w-[380px] h-screen max-h-screen bg-gray-100">
           <span className="relative">
             <div className="absolute -left-[30px] top-2">
               <ChevronRightButton onClick={toggleVisibility} />
@@ -280,22 +280,25 @@ export function SettingsMenu(props) {
 
             {/* Legend */}
             <Switch.Group>
-              <div className="flex flex-wrap items-center my-2 justify-between">
+              <div className="flex flex-wrap items-start my-2 justify-start">
                 <Switch.Label className="text-sm text-gray-500 w-fit min-w-fit mr-2" htmlFor='hoverSwitch'>show legend</Switch.Label>
-                <div className="w-1/2 flex items-start justify-start">
+                {/* <div className="w-1/2 flex items-start justify-start"> */}
+                <span className="ml-1">
                   <Switch
                     id='hoverSwitch'
                     checked={legendVisibility == "visible" ? true : false}
                     onChange={toggleLegendVisibility}
                     className={`${legendVisibility == "visible" ? 'bg-blue-600' : 'bg-gray-200'
-                      } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+                      } relative inline-flex h-5 w-9 items-center rounded-full transition-colors 
+                      focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
                   >
                     <span
-                      className={`${legendVisibility == "visible" ? 'translate-x-6' : 'translate-x-1'
-                        } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                      className={`${legendVisibility == "visible" ? 'translate-x-5' : 'translate-x-1'
+                        } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
                     />
                   </Switch>
-                </div>
+                {/* </div> */}
+                </span>
               </div>
             </Switch.Group>
 
@@ -376,7 +379,7 @@ export function SettingsMenu(props) {
             </div>
 
             {/* Unstable points */}
-            <h4 className="text-md font-medium leading-6 text-gray-900 w-fit mt-4 flex" >
+            {/*             <h4 className="text-md font-medium leading-6 text-gray-900 w-fit mt-4 flex" >
               Unstable Points
               <abbr title="Highlighting points that change location and neighborhods between the selected embedding and the next.">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="gray" className="w-5 h-5 mx-1">
@@ -396,25 +399,20 @@ export function SettingsMenu(props) {
                 onChange={(event) => handleFractionInput(+event.target.value)}
                 id="fractionInput" />
               <AsyncButton onClick={() => showUnstablePoints(unstablePointFraction)}>compute</AsyncButton>
-            </div>
+            </div> */}
+
+
+            <span className="select-none text-sm text-gray-500 text-left my-2">
+              <p> Add current point selection to user_annotations.json</p>
+            </span>
+
+            <SavePointForm scatterplot={scatterplot} />
+
 
           </div>
         </div >
 
-        {/*         <Tabs>
-          <Tab label="Tab 1">
-            <div className="py-4">
-              <h2 className="text-lg font-medium mb-2">Tab 1 Content</h2>
-              <p className="text-gray-700">Hi Text</p>
-            </div>
-          </Tab>
-          <Tab label="Tab 2">
-            <div className="py-4">
-              <h2 className="text-lg font-medium mb-2">Tab 2 Content</h2>
-              <p className="text-gray-700">Hi Text</p>
-            </div>
-          </Tab>
-        </Tabs> */}
+
       </>
     )
   } else {

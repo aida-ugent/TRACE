@@ -19,6 +19,25 @@ export function DefaultButton(props) {
   )
 }
 
+export function SubmitButton(props) {
+
+  const { onClick, children } = props;
+
+  return (
+    <button
+      type="submit"
+      className="min-w-[100px] h-fit select-none justify-center items-center 
+      rounded-md bg-slate-500 text-gray-50 mx-1 my-1 px-4 pb-1 pt-1.5 text-sm font-medium leading-normal
+       border-0 drop-shadow-sm border border-gray-600 hover:no-underline hover:bg-slate-800
+       hover:opacity-75 hover:text-gray-50 focus:opacity-100 focus:shadow-none 
+      focus:outline-none disabled:opacity-75 disabled:bg-gray-700 disabled:text-gray-50"
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  )
+}
+
 
 export function AsyncButton(props) {
 
@@ -171,8 +190,8 @@ export function ChevronRightButton(props) {
       focus:shadow-none focus:outline-none hover:bg-slate-800"
       onClick={props.onClick}
     >
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-        <path fillRule="evenodd" d="M4.72 3.97a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 01-1.06-1.06L11.69 12 4.72 5.03a.75.75 0 010-1.06zm6 0a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06L17.69 12l-6.97-6.97a.75.75 0 010-1.06z" clipRule="evenodd" />
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-6 h-6">
+        <path fillRule="evenodd" d="M15.28 9.47a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 1 1-1.06-1.06L13.69 10 9.97 6.28a.75.75 0 0 1 1.06-1.06l4.25 4.25ZM6.03 5.22l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L8.69 10 4.97 6.28a.75.75 0 0 1 1.06-1.06Z" clipRule="evenodd" />
       </svg>
     </button>
   )

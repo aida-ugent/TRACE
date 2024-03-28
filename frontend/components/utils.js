@@ -1,5 +1,6 @@
 import { Component, useState } from 'react';
 import Select from 'react-select'
+import { SubmitButton } from './buttons';
 
 export function getPointSize(numPoints) {
   // point size depending on number of points
@@ -10,11 +11,11 @@ export function getPointSize(numPoints) {
 
 export function prettyPrint(value) {
   if (typeof value === 'string') {
-      return value;
+    return value;
   } else if (typeof value === 'number') {
-      return value.toPrecision(3);
+    return value.toPrecision(3);
   } else {
-      return value;
+    return value;
   }
 }
 
@@ -54,7 +55,7 @@ function getCanvasWithBackground(scatterplot, bgColor) {
 }
 
 // from https://github.com/flekschas/regl-scatterplot/blob/39d353d5cf0f0e37f821c498322773989a1f5d1d/example/utils.js#L19
-export function saveAsPng(scatterplot, filename='scatter.png') {
+export function saveAsPng(scatterplot, filename = 'scatter.png') {
   const imageObject = new Image();
   imageObject.onload = () => {
     getCanvasWithBackground(scatterplot, '#ffffff').toBlob((blob) => {
@@ -197,4 +198,56 @@ export function HoverNote(props) {
       {children}
     </button >
   )
+}
+
+
+
+export function SavePointForm(props) {
+  const { scatterplot, children } = props;
+  const [name, setName] = useState('selection name');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log(`Form submitted, ${name}`);
+
+    const selectedPoints = scatterplot.get('selectedPoints');
+
+    if (selectedPoints.length > 1) {
+      fetch("/backend/savePointSelection", {
+        method: "POST",
+        body: JSON.stringify({
+          points: selectedPoints,
+          selection_name: name
+        }),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8"
+        }
+      })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Success:', data);
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
+    }
+  }
+
+  return (
+    <div className='flex flex-wrap items-start justify-between mb-2'>
+      <form onSubmit={handleSubmit} className='flex flex-wrap justify-between items-start'>
+        <input
+          onChange={(e) => setName(e.target.value)}
+          value={name}
+          type="text"
+          name="name"
+          className="rounded-md bg-white  px-2 pb-2 pt-2.5 w-3/5 text-sm font-medium leading-normal text-gray-700 "
+          minLength={1} />
+        <SubmitButton>
+          save
+        </SubmitButton>
+      </form>
+    </div>
+  );
+
 }

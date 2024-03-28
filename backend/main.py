@@ -49,6 +49,11 @@ class NeighborRequest(BaseModel):
     hd_metric: str
 
 
+class PointSelection(BaseModel):
+    points: List[int]
+    selection_name: str
+
+
 class FeatureList(BaseModel):
     feature_list: List[str]
 
@@ -89,12 +94,16 @@ def loadDataset(datasetName: str):
                 status_code=500, detail=f"Dataset {datasetName} not found"
             )
     if dataset.adata.n_vars > 4000:
-        print(f"Warning: dataset has {dataset.adata.n_vars} features. Limiting to 4000.")
+        print(
+            f"Warning: dataset has {dataset.adata.n_vars} features. Limiting to 4000."
+        )
 
     point_color_options = {
         "metadata": dataset.get_metadata_features() + ["HD distances", "none"],
         "quality": dataset.get_quality_features(),
-        "features": dataset.adata.var.index.tolist()[0: 4000 if dataset.adata.n_vars > 4000 else dataset.adata.n_vars],
+        "features": dataset.adata.var.index.tolist()[
+            0 : 4000 if dataset.adata.n_vars > 4000 else dataset.adata.n_vars
+        ],
     }
     return {
         "dataset_name": datasetName,
@@ -354,6 +363,15 @@ async def getIntrusions(item: NeighborRequest = Body(...)):
     binary[item.points] = 1
     binary[neighbors] = 0
     return {"result": binary.nonzero()[0].tolist(), "binary": binary.tolist()}
+
+
+@app.post("/backend/savePointSelection")
+async def savePointSelection(item: PointSelection = Body(...)):
+    """
+    Save a point selection to the dataset.
+    """
+    dataset.save_user_annotation(item.points, item.selection_name)
+    return {"result": "success"}
 
 
 @app.post("/backend/computeHDNeighbors")

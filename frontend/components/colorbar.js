@@ -19,6 +19,17 @@ export function Colorbar(props) {
         colors = colors.reverse()
     }
 
+    if (items.length > 11) {
+        // Take every second element from items
+        let newItems = items.filter((_, index) => index % 2 === 0);
+
+        if (items.length % 2 === 0) {
+            // Add the smallest element explicitly at the end
+            newItems.push(items[items.length - 1]);
+        }
+        items = newItems;
+    }
+
     // Calculate the smallest difference between two values
     let smallestDiff = Math.max(...items);
     for (let i = 0; i < items.length - 1; i++) {
@@ -32,19 +43,8 @@ export function Colorbar(props) {
 
     // Format items with precision based on the smallest difference
     const match = smallestDiff.toString().match(/^[0\.]+/)
-    const level = match ? match[0].length : 3;
+    const level = match ? match[0].length - 1 : 3;
     items = items.map((v) => v.toFixed(level));
-
-    if (items.length > 11) {
-        // Take every second element from items
-        let newItems = items.filter((_, index) => index % 2 === 0);
-
-        if (items.length % 2 === 0) {
-            // Add the smallest element explicitly at the end
-            newItems.push(items[items.length - 1]);
-        }
-        items = newItems;
-    }
 
     if (colors.length < 2) {
         console.log("Colorbar only got one color to create a linear gradient. Please specify at least two.");

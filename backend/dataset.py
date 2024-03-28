@@ -7,6 +7,7 @@ import glasbey
 import anndata as ad
 import centroid_correlation
 import utils
+import json
 from sklearn.neighbors import NearestNeighbors
 from numba import set_num_threads, get_num_threads
 from alignment import umeyama_alignment
@@ -331,7 +332,7 @@ class Dataset:
             return list(self.adata.uns["hd_neighbors"].keys())
         else:
             return []
-        
+
     def get_precomputed_neighbors_maxK(self):
         if "hd_neighbors" in self.adata.uns.keys():
             return min([v.shape[1] for v in self.adata.uns["hd_neighbors"].values()])
@@ -409,6 +410,30 @@ class Dataset:
         for embeddingNames in self.adata.uns["methods"].values():
             names.extend(embeddingNames)
         return names
+
+    def save_user_annotation(self, points: list[int], selection_name: str):
+        """
+        Save the user annotations for the dataset.
+
+        Args:
+            points (list[int]): List with point indices.
+            selection_name (str): Description of the selection.
+        """
+        fname = os.path.join(
+            (os.path.dirname(self.filepath) if self.filepath is not None else "./"),
+            self.name.replace(" ", "_") + f"_user_annotations_{time.strftime('%Y%m%d')}.json",
+        )
+
+        if "user_annotations" not in self.adata.uns:
+            self.adata.uns["user_annotations"] = {}
+
+        if selection_name in self.adata.uns["user_annotations"]:
+            # add current time as stinrg to make it unique
+            selection_name = selection_name.replace(" ", "_")
+            selection_name += f"_{time.strftime('%H%M%S')}"
+
+        self.adata.uns["user_annotations"][selection_name] = points
+        json.dump(self.adata.uns["user_annotations"], open(fname, "w"))
 
     def get_category_colors(self, fname, categories: list):
         """
@@ -507,7 +532,7 @@ class Dataset:
             metric (str): The distance metric to use for computing neighbors.
             exact (bool, optional): Whether to compute exact neighbors or use an approximate algorithm. Defaults to False.
         """
-           
+
         if metric is None:
             metric = self.hd_metric
         if (
@@ -675,8 +700,10 @@ class Dataset:
 
         if "landmark_indices" not in self.adata.uns_keys():
             if sampling_method == "kmeans++" and self.get_HD_data().shape[1] > 10000:
-                print(f"Sampling {num_samples} landmarks using kmeans++ for data of shape " 
-                      + f"{self.get_HD_data().shape} will take a while. Consider using sampling_method='random' instead.")
+                print(
+                    f"Sampling {num_samples} landmarks using kmeans++ for data of shape "
+                    + f"{self.get_HD_data().shape} will take a while. Consider using sampling_method='random' instead."
+                )
             if sampling_method == "kmeans++":
                 landmark_indices = centroid_correlation.sample_landmarks(
                     data=self.get_HD_data(),
@@ -808,7 +835,10 @@ class Dataset:
             hd_metric = self.hd_metric
 
         if self.verbose:
-            print(f"Computing random triplet accuracy with {num_triplets} per point...", flush=True)
+            print(
+                f"Computing random triplet accuracy with {num_triplets} per point...",
+                flush=True,
+            )
         start_time = time.time()
 
         if same_triplets:
