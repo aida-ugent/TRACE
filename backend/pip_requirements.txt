@@ -1,6 +1,7 @@
 fastapi
 uvicorn
 numpy
+numba
 pandas
 scanpy
 annoy

@@ -1,8 +1,7 @@
 import numpy as np
-from tqdm import tqdm
 from numba import jit, prange
-from numba_progress import ProgressBar
 from numpy.random import default_rng
+
 
 # This stability measure is based on the paper "Dynamic visualization of
 # high-dimensional data" from Eric Sun et al. (2023)
@@ -46,34 +45,42 @@ def variance_across_embeddings(embeddings, num_samples=50):
     distances = np.zeros(n)
     rng = default_rng()
     samples = rng.choice(n, (n, num_samples), replace=True)
-    
-    with ProgressBar(total=n, dynamic_ncols=True) as numba_progress:
-        variance_progress(embeddings, variance, distances, samples, numba_progress) 
+
+    compute_variance(embeddings, variance, distances, samples)
 
     # Normalize the variance scores
     variance /= num_samples
     variance /= np.sum(distances) / (n * num_samples * num_embeddings)
     return variance
 
+
 @jit(nopython=True, parallel=True, cache=True)
-def variance_progress(embeddings, variance, sum_distances, samples, progress_hook):
+def compute_variance(embeddings, variance, sum_distances, samples):
     n = embeddings[0].shape[0]
     num_embeddings = embeddings.shape[0]
-    
+
     for i in prange(n):
-        #sample = rng.choice(n, num_samples, replace=False)
-        distances = np.sqrt(np.sum((embeddings[:, samples[i], :] - embeddings[:, np.repeat(i, samples.shape[1]), :]) ** 2, axis=2))
-        
+        # sample = rng.choice(n, num_samples, replace=False)
+        distances = np.sqrt(
+            np.sum(
+                (
+                    embeddings[:, samples[i], :]
+                    - embeddings[:, np.repeat(i, samples.shape[1]), :]
+                )
+                ** 2,
+                axis=2,
+            )
+        )
+
         sum_distances[i] += np.sum(distances)
         distances -= np.sum(distances, axis=0) / samples.shape[1]
 
         # compute the variance of distances along the samples
         embedding_means = np.sum(distances, axis=0) / num_embeddings
-        variance[i] = np.sum(np.sum((distances - embedding_means) ** 2, axis=0) / (num_embeddings - 1))
+        variance[i] = np.sum(
+            np.sum((distances - embedding_means) ** 2, axis=0) / (num_embeddings - 1)
+        )
 
-        if progress_hook is not None:
-            progress_hook.update(1)
-            
 
 def stability_from_variance(variance, alpha):
     """
