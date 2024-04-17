@@ -369,7 +369,7 @@ export function SettingsMenu(props) {
             </div>
 
             <span className="select-none text-sm text-gray-500 text-left my-2">
-              <p> Select a single point to color points according to their HD distance. The point colors are based on the distances between on&nbsp;
+              <p> Select a single point to color points according to their HD distance. The point colors are based on the distances between&nbsp;
                 <a onClick={() => showLandmarks(scatterplot)} className="underline cursor-pointer">landmark points</a>.</p>
             </span>
             <div className='flex flex-wrap items-center mb-2 justify-left'>
