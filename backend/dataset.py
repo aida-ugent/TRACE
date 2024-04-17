@@ -421,7 +421,8 @@ class Dataset:
         """
         fname = os.path.join(
             (os.path.dirname(self.filepath) if self.filepath is not None else "./"),
-            self.name.replace(" ", "_") + f"_user_annotations_{time.strftime('%Y%m%d')}.json",
+            self.name.replace(" ", "_")
+            + f"_user_annotations_{time.strftime('%Y%m%d')}.json",
         )
 
         if "user_annotations" not in self.adata.uns:
@@ -469,7 +470,7 @@ class Dataset:
     ## Quality Score Functions ##
     #############################
 
-    def compute_quality(self):
+    def compute_quality(self, filename: str = None):
         """
         Compute all quality measures for the dataset.
         """
@@ -499,7 +500,7 @@ class Dataset:
 
         self.align_embeddings(reference_embedding=self.get_embedding_names()[0])
         print(f"Done in {time.time()-start_time:.2f}s.")
-        self.save_adata()
+        self.save_adata(filename=filename)
 
     def print_quality(self):
         """

@@ -99,8 +99,8 @@ def loadDataset(datasetName: str):
         )
 
     point_color_options = {
-        "metadata": dataset.get_metadata_features() + ["HD distances", "none"],
         "quality": dataset.get_quality_features(),
+        "metadata": dataset.get_metadata_features() + ["HD distances", "none"],
         "features": dataset.adata.var.index.tolist()[
             0 : 4000 if dataset.adata.n_vars > 4000 else dataset.adata.n_vars
         ],
