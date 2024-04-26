@@ -7,8 +7,6 @@ services:
       dockerfile: Dockerfile.nextjs
     ports:
       - "3000:3000"
-    volumes:
-      - frontend_dir:/app
 
   backend:
     build:
@@ -17,25 +15,5 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - backend_dir:/app
-      - data_dir:/data
-
-volumes:
-  frontend_dir:
-    driver: local
-    driver_opts:
-      o: bind
-      type: none
-      device: ./frontend
-  backend_dir:
-    driver: local
-    driver_opts:
-      o: bind
-      type: none
-      device: ./backend
-  data_dir:
-    driver: local
-    driver_opts:
-      o: bind
-      type: none
-      device: ./data
+      - ./backend:/app
+      - ./data:/data

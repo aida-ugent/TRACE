@@ -435,6 +435,11 @@ class Dataset:
 
         self.adata.uns["user_annotations"][selection_name] = points
         json.dump(self.adata.uns["user_annotations"], open(fname, "w"))
+        # need to change the ownership of the file to the user (when running from docker)
+        os.chown(fname,
+                 os.stat(os.path.dirname(self.filepath)).st_uid, 
+                 os.stat(os.path.dirname(self.filepath)).st_gid)
+        print("Wrote user annotations to ", fname)
 
     def get_category_colors(self, fname, categories: list):
         """

@@ -3,7 +3,7 @@ FROM python:3.11
 
 # Set the working directory in the container
 WORKDIR /app
-RUN mkdir /data
+
 # Copy requirements.txt to the container
 RUN apt-get update && apt-get install -y \ 
     build-essential \
@@ -21,4 +21,3 @@ EXPOSE 8000
 
 # Start the Python backend
 CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-

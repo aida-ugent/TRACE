@@ -5,7 +5,7 @@ FROM node:21
 WORKDIR /app
 
 # Copy package.json and package-lock.json to the container
-COPY frontend/package*.json ./
+COPY frontend/ ./
 
 # Install Next.js app dependencies
 RUN npm install
@@ -17,4 +17,3 @@ EXPOSE 3000
 
 # Start the Next.js app
 CMD ["npm", "run", "dev"]
-
