@@ -1,14 +1,15 @@
-import { useState } from "react";
-import { ReactSelect, SavePointForm} from "./utils";
+import { useEffect, useState } from "react";
+import { ReactSelect, SavePointForm } from "./utils";
 import { SettingsButton, ChevronRightButton, AsyncButton, DefaultButton } from "./buttons";
 import { Switch } from '@headlessui/react'
 import { Infobox } from "./infobox";
 import GroupedSelect from "./groupedSelect";
 import { Tabs, Tab } from "./tabs";
 import Checkbox, { Radio } from "./checkbox";
+import { backend_url } from "./api";
 
 const showLandmarks = (scatterplot) => {
-  fetch(`/backend/landmarkPoints/`)
+  fetch(`${backend_url}/backend/landmarkPoints/`)
     .then(response => {
       if (response.ok) {
         response.json()
@@ -25,7 +26,7 @@ const showIntrusions = (scatterplot, kNeighbors, metric) => {
 
   return new Promise((resolve, reject) => {
     if (selectedPoints.length > 1) {
-      fetch("/backend/intrusions", {
+      fetch(`${backend_url}/backend/intrusions`, {
         method: "POST",
         body: JSON.stringify({
           k: kNeighbors,
@@ -59,7 +60,7 @@ const showIntrusions = (scatterplot, kNeighbors, metric) => {
 
 const precomputeNeighbors = (kNeighbors, metric) => {
   return new Promise((resolve, reject) => {
-    fetch(`/backend/precomputeAllNeighbors?maxK=${kNeighbors}&hd_metric=${metric}`, {
+    fetch(`${backend_url}/backend/precomputeAllNeighbors?maxK=${kNeighbors}&hd_metric=${metric}`, {
       method: "POST",
       body: {},
       headers: {
@@ -83,7 +84,7 @@ const precomputeNeighbors = (kNeighbors, metric) => {
 }
 
 async function precomputeNeighborsSubscribe(maxK, metric) {
-  let response = await fetch(`/backend/precomputeAllNeighbors?maxK=${maxK}&hd_metric=${metric}`,
+  let response = await fetch(`${backend_url}/backend/precomputeAllNeighbors?maxK=${maxK}&hd_metric=${metric}`,
     {
       method: "POST",
       body: {},
@@ -138,6 +139,15 @@ export function SettingsMenu(props) {
   const toggleVisibility = () => {
     if (visibility == "visible") setVisibility("hidden"); else setVisibility("visible");
   }
+
+  useEffect(() => {
+    const canvas = document.getElementById("canvas");
+    if (canvas !== null) {
+      const { width, height } = canvas.getBoundingClientRect();
+      console.log(`canvas width: ${width}, height: ${height}`)
+      //scatterplot.set({ width, height });
+    }
+  }, [visibility])
 
   const toggleOpacityByDensity = (byDensity) => {
     setOpacityByDensity(byDensity);
@@ -297,7 +307,7 @@ export function SettingsMenu(props) {
                         } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
                     />
                   </Switch>
-                {/* </div> */}
+                  {/* </div> */}
                 </span>
               </div>
             </Switch.Group>

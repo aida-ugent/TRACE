@@ -1,5 +1,3 @@
-'use-client'
-
 import { useCallback } from 'react';
 import createScatterplot from 'regl-scatterplot';
 export var scatterplot;
@@ -47,6 +45,7 @@ export function Canvas({ data, setScatterLoaded, setScatterplot}) {
     return (
 
         <canvas
+            id="canvas"
             ref={refCallback}
             className='bg-white'
         />

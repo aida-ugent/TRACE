@@ -1,6 +1,0 @@
-fastapi==0.103.2
-uvicorn==0.20.0
-numpy==1.24.3
-pandas
-scanpy
-annoy

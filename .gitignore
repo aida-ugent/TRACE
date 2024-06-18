@@ -7,7 +7,7 @@ manuscript/
 
 # node
 **/node_modules/*
-**/.next/
+**/build/
 
 # python envs
 backend/*_env/*

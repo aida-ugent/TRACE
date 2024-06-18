@@ -34,7 +34,7 @@ export default function GroupedSelect({ options, selected, onChange, menuPlaceme
         var selected_pairs = selected.map(v => {return { 'value': v, 'label': v }});
         return (
             <Select
-                className='min-w-[150px] text-slate-600 text-left'
+                className='w-full text-slate-600 text-left'
                 isClearable={isClearable}
                 isSearchable={true}
                 isDisabled={isDisabled}
@@ -56,7 +56,7 @@ export default function GroupedSelect({ options, selected, onChange, menuPlaceme
 
         return (
             <Select
-                className='min-w-[150px] text-slate-600 text-left'
+                className='w-full text-slate-600 text-left'
                 isClearable={isClearable}
                 isDisabled={isDisabled}
                 isSearchable={true}

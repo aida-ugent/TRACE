@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { HoverNote, prettyPrint } from "./utils";
 import { Switch } from '@headlessui/react'
+import { backend_url } from "./api";
 import GroupedSelect from "./groupedSelect";
 
 function HoverText({ pointData }) {
@@ -124,7 +125,7 @@ export function Infobox(props) {
             } else {
                 let body = JSON.stringify({ feature_list: features })
                 console.log(`fetching hover features ${features}`)
-                fetch("/backend/metadataFeatures", {
+                fetch(`${backend_url}/backend/metadataFeatures`, {
                     method: "POST",
                     body: body,
                     headers: {

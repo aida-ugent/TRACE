@@ -1,11 +1,13 @@
-import matplotlib.pyplot as plt
 import matplotlib
+import numpy as np
+
 
 def toHex(colormap):
-    return [matplotlib.colors.rgb2hex(colormap(i)) for i in range(colormap.N)]
+    return [matplotlib.colors.rgb2hex(colormap[i]) for i in range(len(colormap))]
 
-purple_green = toHex(matplotlib.colors.LinearSegmentedColormap.from_list(
-    "continuous_purple_green",
+
+PurpleGreen = matplotlib.colors.LinearSegmentedColormap.from_list(
+    "diverging_purple_green",
     [
         "#762a83",
         "#884c91",
@@ -20,14 +22,15 @@ purple_green = toHex(matplotlib.colors.LinearSegmentedColormap.from_list(
         "#003a00",
     ],
     N=21,
-))
-
-# toHex(plt.cm.get_cmap("PRGn", 20)), this colormap has white in the center
+)
+matplotlib.colormaps.register(PurpleGreen)
 
 palettes = {
-    "viridis": toHex(plt.cm.get_cmap("viridis", 21)),
-    "continuous_BrGn": toHex(plt.cm.get_cmap("BrBG", 21)),
-    "continuous_PRGn": purple_green,
+    "viridis": toHex(matplotlib.colormaps["viridis"](np.linspace(0, 1, 21))),
+    "continuous_BrGn": toHex(matplotlib.colormaps["BrBG"](np.linspace(0, 1, 21))),
+    "continuous_PRGn": toHex(
+        matplotlib.colormaps["diverging_purple_green"](np.linspace(0, 1, 21))
+    ),
     "continuous_PRGn_old": [
         "#762a83",
         "#884c91",

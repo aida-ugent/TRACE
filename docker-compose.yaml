@@ -4,14 +4,16 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.nextjs
+      dockerfile: Dockerfile.frontend
     ports:
       - "3000:3000"
+    links:
+      - backend
 
   backend:
     build:
       context: .
-      dockerfile: Dockerfile.python
+      dockerfile: Dockerfile.backend
     ports:
       - "8000:8000"
     volumes:

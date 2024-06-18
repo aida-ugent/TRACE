@@ -1,6 +1,7 @@
 import { Component, useState } from 'react';
 import Select from 'react-select'
 import { SubmitButton } from './buttons';
+import { backend_url } from './api';
 
 export function getPointSize(numPoints) {
   // point size depending on number of points
@@ -213,7 +214,7 @@ export function SavePointForm(props) {
     const selectedPoints = scatterplot.get('selectedPoints');
 
     if (selectedPoints.length > 1) {
-      fetch("/backend/savePointSelection", {
+      fetch(`${backend_url}/backend/savePointSelection`, {
         method: "POST",
         body: JSON.stringify({
           points: selectedPoints,

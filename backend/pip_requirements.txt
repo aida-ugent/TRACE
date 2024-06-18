@@ -7,5 +7,5 @@ scanpy
 annoy
 glasbey
 opentsne
-matplotlib
+matplotlib<3.9 # avoiding ImportError: cannot import name 'get_cmap' from 'matplotlib.cm' (glasbey)
 pyyaml

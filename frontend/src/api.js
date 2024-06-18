@@ -1,10 +1,13 @@
-
+export var backend_url = "";
+if(process.env.NODE_ENV === 'production') {
+    var backend_url = process.env.REACT_APP_API_URL;
+}
 
 
 export function getHDNeighbors(selectedPoints, kNeighbors, metric) {
     return new Promise((resolve, reject) => {
         if (selectedPoints.length > 0) {
-            fetch("/backend/computeHDNeighbors", {
+            fetch(`${backend_url}/backend/computeHDNeighbors`, {
                 method: "POST",
                 body: JSON.stringify({
                     k: kNeighbors,

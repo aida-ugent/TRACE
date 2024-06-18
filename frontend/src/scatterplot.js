@@ -1,5 +1,3 @@
-'use client'
-
 import { useCallback, useState, useEffect, useRef } from "react";
 import { DefaultButton, ResetButton, AsyncButton, ScreenshotButton } from "./buttons";
 import Legend from "./legend";
@@ -7,10 +5,10 @@ import { scatterplot } from "./canvas";
 import { SettingsMenu } from "./PlotControls"
 import SelectionInfo from "./selectionInfo";
 import { Colorbar } from "./colorbar";
-import CanvasWrapper from '@/components/canvas_wrapper'
+import CanvasWrapper from './canvas_wrapper'
 import { ReactSelect, getPointSize } from "./utils"
 import GroupedSelect from "./groupedSelect"
-import { getHDNeighbors } from "./api";
+import { getHDNeighbors, backend_url } from "./api";
 import { saveAsPng } from './utils';
 
 let filteredPoints = [];
@@ -77,7 +75,7 @@ const resetPointFilter = () => {
 }
 
 const getPointColors = (embName, featureName, setBackendStatus = () => { }) => {
-    var fetchStr = `/backend/pointColor/${featureName}?embeddingName=${embName}`;
+    var fetchStr = `${backend_url}/backend/pointColor/${featureName}?embeddingName=${embName}`;
 
     if (scatterplot != null) {
         const selected = scatterplot.get('selectedPoints')
@@ -143,7 +141,7 @@ function showEmbedding({
 const fetchEmbedding = (embName, setBackendStatus = () => { }) => {
     setBackendStatus({ "loading": true, "message": `Fetching ${embName}...` });
     return new Promise((resolve, reject) => {
-        fetch(`/backend/embedding?embName=${embName}`)
+        fetch(`${backend_url}/backend/embedding?embName=${embName}`)
             .then(res => res.json())
             .then(res => {
                 setBackendStatus({ "loading": false, "message": "" });
@@ -193,8 +191,6 @@ export default function Scatterplot() {
     const [maxNeighbors, setMaxNeighbors] = useState(0);
     const [datasetName, setDatasetName] = useState(null);
 
-    const printCanvasRef = useRef(null);
-
     const handleDatasetSelect = (newDatasetName) => {
         console.log(`handleDatasetSelect ${newDatasetName}`)
         setDatasetName(newDatasetName);
@@ -238,7 +234,7 @@ export default function Scatterplot() {
         return new Promise((resolve, reject) => {
             var newEmbeddingName;
             setLoadingMessage(`Loading ${datasetName}...`)
-            fetch(`/backend/loadDataset?datasetName=${datasetName}`)
+            fetch(`${backend_url}/backend/loadDataset?datasetName=${datasetName}`)
                 .then(response => {
                     if (!response.ok) {
                         console.log(`/backend/loadDataset?datasetName=${datasetName} `
@@ -366,7 +362,7 @@ export default function Scatterplot() {
     const showUnstablePoints = (maxFraction) => {
         return new Promise((resolve, reject) => {
             scatterplot.deselect();
-            fetch(`/backend/getUnstablePoints?embNameA=${embeddingName}` +
+            fetch(`${backend_url}/backend/getUnstablePoints?embNameA=${embeddingName}` +
                 `&embNameB=${getNextEmbeddingName(embeddingName)}` +
                 `&maxFraction=${maxFraction}` +
                 `&k=${kNeighbors}`)
@@ -417,7 +413,7 @@ export default function Scatterplot() {
     }
 
     useEffect(() => {
-        fetch("/backend/datasetOptions")
+        fetch(`${backend_url}/backend/datasetOptions`)
             .then(response => {
                 if (!response.ok) {
                     console.log(`/backend/datasetOptions got HTTP error: ` +
@@ -478,15 +474,14 @@ export default function Scatterplot() {
         return (
             <>
                 <div className="flex-grow h-screen max-h-screen bg-white relative min-w-[400px]">
-                    <div ref={printCanvasRef} className="w-full h-full"><CanvasWrapper
-                        setScatterLoaded={setScatterLoaded} setScatterplot={setScatterplot} /></div>
+                    <CanvasWrapper setScatterLoaded={setScatterLoaded} setScatterplot={setScatterplot} />
                     <div className="absolute w-full flex flex-wrap top-0 pt-1 px-1 items-center display-block justify-between">
                         <div className="flex items-left">
                             <ScreenshotButton onClick={() => saveAsPng(scatterplot, `${datasetName}_${embeddingName}_scatter.png`)} />
                             <ResetButton onClick={resetZoomHandler} />
                         </div>
                         {/* Embedding method */}
-                        <div className="flex items-center p-2 justify-between">
+                        <div className="flex items-center min-w-[250px] p-2 justify-between">
                             <button
                                 type="button"
                                 className="h-fit select-none inline-flex rounded-full bg-slate-500 mx-2 p-1 text-sm font-medium 

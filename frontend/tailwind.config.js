@@ -1,17 +1,19 @@
 /** @type {import('tailwindcss').Config} */
-
 module.exports = {
   content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    "./public/index.html",
+    "./src/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
-    extend: {
-      padding: {
-        '1/2': '50%',
-        full: '100%',
+      fontFamily: {
+        sans: ["Roboto", "sans-serif"],
       },
-    },
+      extend: {
+        padding: {
+          '1/2': '50%',
+          full: '100%',
+        },
+      },
   },
+  plugins: [],
 }

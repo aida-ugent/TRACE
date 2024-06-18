@@ -7,12 +7,13 @@ TRACE<sup>[1](#trace)</sup> supports you in analyzing **global and local quality
 
 ### Option 1: Using Docker 🐋
 
+First you might need to install [docker-compose](https://docs.docker.com/compose/install/).
+
 ```bash
 docker-compose build
 docker-compose up
 ```
-This will mount the /frontend, /backend, and /data directories into the repective containers.
-The /frontend/.next folder will be recreated every time the frontend is started. One might have to delete this folder before running the app without docker (as it is owned by 'root'). 
+This will mount the /frontend, /backend, and /data directories into the repective containers. 
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
@@ -22,9 +23,6 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 **Backend**: Install the required python packages for the backend, tested with Python 3.11 from `backend/pip_requirements.txt` or `backend/conda_requirements.yaml`. 
 
 **Frontend**: Install the packages in `frontend/package.json` using e.g. `npm install`.
-
-
-💡 Did you use Docker before to run TRACE? Make sure your user has write access to /frontend/.next or delete this folder. 
 
 First, start the backend within the right python evironment:
 ```bash
@@ -37,10 +35,6 @@ python -m uvicorn main:app --reload
 Then start the frontend development server:
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 ```
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
