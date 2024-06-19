@@ -247,7 +247,9 @@ async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = No
                 range = [0, 1]
         else:
             ftype = "continuous"
-            colors = continuous_palettes.palettes["viridis"]
+            colors = dataset.get_continuous_colors(fname)
+            if colors is None:
+                colors = continuous_palettes.palettes["viridis"]
 
     # features
     elif fname in dataset.adata.var.index:

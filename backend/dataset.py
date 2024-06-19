@@ -470,6 +470,13 @@ class Dataset:
                 palette_size=len(categories), grid_size=32, colorblind_safe=True
             )
         return {"ticks": categories, "colors": list(colors)}
+    
+    def get_continuous_colors(self, fname):
+        """ Retrieve colorscale for continuous feature if specified"""
+        if fname + "_colors" in self.adata.uns_keys():
+            return list(self.adata.uns[fname + "_colors"])
+        else:
+            return None
 
     def align_embeddings(self, reference_embedding: str):
         if reference_embedding not in self.get_embedding_names():
