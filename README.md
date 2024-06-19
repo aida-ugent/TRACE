@@ -10,8 +10,6 @@ TRACE<sup>[1](#trace)</sup> supports you in analyzing **global and local quality
 
 Make sure you have [Docker Compose](https://docs.docker.com/compose/install/) installed. Then build the container that includes the backend and frontend.
 
-First you might need to install [docker-compose](https://docs.docker.com/compose/install/).
-
 ```bash
 docker-compose build
 docker-compose up
@@ -134,7 +132,7 @@ trace_data.compute_random_triplet_accuracy(
 )
 trace_data.compute_point_stability(num_samples=50)
 
-# alighn the embeddings such that point movement is minimized
+# align the embeddings such that point movement is minimized
 trace_data.align_embeddings(reference_embedding="PCA")
 trace_data.save_adata(filename="./gauss_line.h5ad")
 
