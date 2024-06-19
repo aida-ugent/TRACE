@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.random import default_rng
 import pandas as pd
 import os
 import neighbors
@@ -223,7 +224,7 @@ class Dataset:
                     )
                 self.adata.obs[key] = value
 
-    def rename_quality_column(self, old_name: str, new_name: str):
+    def rename_quality_feature(self, old_name: str, new_name: str):
         """
         Rename a quality column in the dataset.
 
@@ -236,6 +237,17 @@ class Dataset:
                 self.adata.uns[name]["quality"][new_name] = self.adata.uns[name][
                     "quality"
                 ].pop(old_name)
+                
+    def remove_quality_feature(self, feature: str):
+        """
+        Remove a quality feature from the dataset.
+
+        Parameters:
+            feature (str): The name of the quality feature to remove.
+        """
+        for name in self.get_embedding_names():
+            if feature in self.adata.uns[name]["quality"]:
+                del self.adata.uns[name]["quality"][feature]
 
     def get_quality_features(self):
         """
@@ -244,7 +256,7 @@ class Dataset:
         features = set()
         for embedding in self.get_embedding_names():
             features = features.union(self.adata.uns[embedding]["quality"].keys())
-        return list(features)
+        return sorted(list(features))
 
     def get_metadata_features(self):
         """
@@ -475,13 +487,19 @@ class Dataset:
     ## Quality Score Functions ##
     #############################
 
-    def compute_quality(self, filename: str = None):
+    def compute_quality(self, filename: str = None, hd_metric=None):
         """
         Compute all quality measures for the dataset.
+        
+        Args:
+            filename (str, optional): The filename to save the dataset. Defaults to None.
+            hd_metric (str, optional): The metric to use for high-dimensional space. 
+                Defaults to None to use the metric specified in the dataset.
         """
         # this will take a while, the user should be updated
         self.verbose = True
-        print(f"Quality measures for {self.name}...")
+        hd_metric = self.hd_metric if hd_metric is None else hd_metric
+        print(f"Quality measures for {self.name} using {hd_metric} distance in HD space...")
         print(f"NUMBA uses {get_num_threads()} threads")
         start_time = time.time()
 
@@ -496,11 +514,11 @@ class Dataset:
             num_samples = int(self.adata.n_obs / 2)
             neighborhood_sizes = [num_samples]
 
-        self.precompute_HD_neighbors(maxK=max(neighborhood_sizes))
-        self.compute_neighborhood_preservation(neighborhood_sizes=neighborhood_sizes)
-        self.compute_global_distance_correlation()
+        self.precompute_HD_neighbors(maxK=max(neighborhood_sizes), metric=hd_metric)
+        self.compute_neighborhood_preservation(neighborhood_sizes=neighborhood_sizes, hd_metric=hd_metric)
+        self.compute_global_distance_correlation(hd_metric=hd_metric)
 
-        self.compute_random_triplet_accuracy(num_triplets=num_samples)
+        self.compute_random_triplet_accuracy(num_triplets=num_samples, hd_metric=hd_metric)
         self.compute_point_stability(num_samples=num_samples)
 
         self.align_embeddings(reference_embedding=self.get_embedding_names()[0])
@@ -627,7 +645,7 @@ class Dataset:
         for name in self.get_embedding_names():
             if any(
                 [
-                    f"neighborhood preservation k={k}"
+                    f"neighborhood preservation k={k} ({hd_metric})"
                     not in self.adata.uns[name]["quality"]
                     for k in neighborhood_sizes
                 ]
@@ -642,7 +660,7 @@ class Dataset:
                 )
                 for i, k in enumerate(neighborhood_sizes):
                     self.adata.uns[name]["quality"][
-                        f"neighborhood preservation k={k}"
+                        f"neighborhood preservation k={k} ({hd_metric})"
                     ] = preservation[:, i]
         if self.verbose:
             print(f"Done ({time.time()-start_time:.2f}s).")
@@ -671,6 +689,7 @@ class Dataset:
         start_time = time.time()
         if hd_metric is None:
             hd_metric = self.hd_metric
+        measure_key = f"landmark distance correlation ({hd_metric})"
 
         sampling_choices = ["kmeans++", "random", "auto"]
         if sampling_method not in sampling_choices:
@@ -679,7 +698,7 @@ class Dataset:
                              Options are {sampling_choices}."
             )
         if sampling_method == "auto":
-            if self.get_HD_data().shape[1] <= 10000:
+            if self.get_HD_data().shape[0] <= 10000:
                 sampling_method = "kmeans++"
             else:
                 sampling_method = "random"
@@ -691,7 +710,7 @@ class Dataset:
         embedding_names = [
             name
             for name in self.get_embedding_names()
-            if "landmark distance correlation" not in self.adata.uns[name]["quality"]
+            if measure_key not in self.adata.uns[name]["quality"]
         ]
 
         if len(embedding_names) == 0:
@@ -716,9 +735,8 @@ class Dataset:
                     num_samples=num_samples,
                 )
             else:
-                landmark_indices = np.random.choice(
-                    self.adata.n_obs, size=num_samples, replace=False
-                )
+                print(f"Sampling {num_samples} landmarks using random sampling.")
+                landmark_indices = default_rng().choice(self.adata.n_obs, size=num_samples, replace=False)
             self.adata.uns["landmark_indices"] = landmark_indices
 
         hd_landmark_distances = centroid_correlation.compute_pairwise_distance(
@@ -730,7 +748,7 @@ class Dataset:
         for name in embedding_names:
             if self.verbose:
                 print(f"{name}, ", end="", flush=True)
-            self.adata.uns[name]["quality"]["landmark distance correlation"] = (
+            self.adata.uns[name]["quality"][measure_key] = (
                 centroid_correlation.compute_landmark_correlation(
                     ld_data=self.adata.obsm[name],
                     hd_data=self.get_HD_data(),
@@ -744,7 +762,7 @@ class Dataset:
         if self.verbose:
             print(f"Done ({time.time()-start_time:.2f}s).")
 
-    def get_HD_landmark_distances(self, selectedPoint: int):
+    def get_HD_landmark_distances(self, selectedPoint: int, hd_metric: str = None):
         """
         Get the distances of the closest landmark of the selected point to all other landmarks.
 
@@ -754,20 +772,24 @@ class Dataset:
         Returns:
             np.ndarray: An array of shape (n_points,) with the prolongated distance.
         """
+        if hd_metric is None:
+            hd_metric = self.hd_metric
 
-        if ["closestLandmarks"] not in self.adata.uns_keys():
+        closest_landmark_key = f"closestLandmarks ({hd_metric})"
+
+        if [closest_landmark_key] not in self.adata.uns_keys():
             # nearest neighbor index for HD data
-            hd_nbr_index = NearestNeighbors(n_neighbors=2, algorithm="auto").fit(
+            hd_nbr_index = NearestNeighbors(n_neighbors=2, algorithm="auto", metric=hd_metric).fit(
                 self.get_HD_data()[self.adata.uns["landmark_indices"], :]
             )
             _, neighbors = hd_nbr_index.kneighbors(self.get_HD_data(), n_neighbors=1)
             neighbors = neighbors.flatten()
             # translate neighbor indices to landmark indices
             # neighbors = self.adata.uns["landmark_indices"][neighbors]
-            self.adata.uns["closestLandmarks"] = neighbors
+            self.adata.uns[closest_landmark_key] = neighbors
 
         closestLandmark = self.adata.uns["landmark_indices"][
-            self.adata.uns["closestLandmarks"][selectedPoint]
+            self.adata.uns[closest_landmark_key][selectedPoint]
         ]
 
         distance_to_landmarks = centroid_correlation.compute_pairwise_distance(
@@ -778,7 +800,7 @@ class Dataset:
 
         # prolongate distances to all points
         distances = np.take(
-            distance_to_landmarks, self.adata.uns["closestLandmarks"], axis=0
+            distance_to_landmarks, self.adata.uns[closest_landmark_key], axis=0
         )
         return distances
 
@@ -839,6 +861,7 @@ class Dataset:
     ):
         if hd_metric is None:
             hd_metric = self.hd_metric
+        measure_key = f"random triplet accuracy ({hd_metric})"
 
         if self.verbose:
             print(
@@ -856,10 +879,10 @@ class Dataset:
                 hd_metric=hd_metric,
             )
             for name in self.get_embedding_names():
-                if "random triplet accuracy" not in self.adata.uns[name]["quality"]:
+                if measure_key not in self.adata.uns[name]["quality"]:
                     if self.verbose:
                         print(f"{name}, ", end="", flush=True)
-                    self.adata.uns[name]["quality"]["random triplet accuracy"] = (
+                    self.adata.uns[name]["quality"][measure_key] = (
                         triplet_accuracy.get_triplet_accuracy(
                             Y=self.adata.obsm[name],
                             hd_labels=labels,
@@ -868,10 +891,10 @@ class Dataset:
                     )
         else:
             for name in self.get_embedding_names():
-                if "random triplet accuracy" not in self.adata.uns[name]["quality"]:
+                if measure_key not in self.adata.uns[name]["quality"]:
                     if self.verbose:
                         print(f"{name}, ", end="", flush=True)
-                    self.adata.uns[name]["quality"]["random triplet accuracy"] = (
+                    self.adata.uns[name]["quality"][measure_key] = (
                         triplet_accuracy.random_triplet_eval(
                             X=self.get_HD_data(),
                             Y=self.adata.obsm[name],

@@ -74,13 +74,13 @@ const resetPointFilter = () => {
     filteredPoints = [...Array(numPoints).keys()];
 }
 
-const getPointColors = (embName, featureName, setBackendStatus = () => { }) => {
+const getPointColors = (embName, featureName, setBackendStatus = () => { }, selectedMetric) => {
     var fetchStr = `${backend_url}/backend/pointColor/${featureName}?embeddingName=${embName}`;
 
     if (scatterplot != null) {
         const selected = scatterplot.get('selectedPoints')
         if (selected.length == 1) {
-            fetchStr = `/backend/pointColor/${featureName}?embeddingName=${embName}&selectedPoint=${selected[0]}`;
+            fetchStr = `/backend/pointColor/${featureName}?embeddingName=${embName}&selectedPoint=${selected[0]}&hdMetric=${selectedMetric}`;
         }
     }
     setBackendStatus({ "loading": true, "message": `Fetching ${featureName}...` });
@@ -315,7 +315,7 @@ export default function Scatterplot() {
 
     const handlePointColorSelect = (newPointColor) => {
         console.log(`handlePointColorSelect ${newPointColor}`)
-        getPointColors(embeddingName, newPointColor, setBackendStatus)
+        getPointColors(embeddingName, newPointColor, setBackendStatus, selectedMetric)
             .then((res) => {
                 showEmbedding({
                     embedding: activeEmbedding,
@@ -385,7 +385,7 @@ export default function Scatterplot() {
 
                 if (pointColors["group"] === "quality") {
                     // pointColor was quality of old embedding ... recompute
-                    getPointColors(newEmbeddingName, selectedPointColor, setBackendStatus)
+                    getPointColors(newEmbeddingName, selectedPointColor, setBackendStatus, selectedMetric)
                         .then((res) => {
                             if ("none" in res["colorMap"]) {
                                 setSelectedPointColor("none");

@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.random import default_rng
 import pandas as pd
 from scipy import stats
 from sklearn.metrics import pairwise_distances
@@ -124,6 +125,12 @@ def sample_landmarks(data: np.ndarray, num_samples: int):
     """
     num_samples = min(num_samples, data.shape[0])
     _, indices = kmeans_plusplus(data, n_clusters=num_samples, random_state=0)
+    
+    indices = np.unique(np.asarray(indices))
+    if len(indices) < num_samples:
+        print(f"Warning: Not enough unique landmarks from kmeans++. Adding {num_samples - len(indices)} random samples.")
+        possible_indices = np.setdiff1d(np.arange(data.shape[0]), indices)
+        indices = np.concatenate([indices, default_rng().choice(possible_indices, num_samples - len(indices), replace=False)])
     return np.asarray(indices)
 
 

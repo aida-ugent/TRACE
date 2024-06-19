@@ -193,7 +193,7 @@ async def getEmbedding(embName: str):
 
 
 @app.get("/backend/pointColor/{fname}")
-async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = None):
+async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = None, hdMetric: str = None):
     """Retrieve values for metadata or feature, normalize,
     and compute colormaps.
 
@@ -214,9 +214,9 @@ async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = No
     range = None
     fgroup = None
 
-    if fname == "HD distances" and selectedPoint is not None:
+    if fname == "HD distances" and (selectedPoint is not None and hdMetric is not None):
         # compute HD distances for selected point
-        fvalues = dataset.get_HD_landmark_distances(selectedPoint)
+        fvalues = dataset.get_HD_landmark_distances(selectedPoint, hd_metric=hdMetric)
         ftype = "continuous"
         fgroup = "metadata"
         colors = continuous_palettes.palettes["viridis"]
@@ -270,7 +270,7 @@ async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = No
         # if correlation scale from [-1, 1] to [0,1]
         if "corr" in fname:
             range = [-1, 1]
-            colors = continuous_palettes.palettes["continuous_PRGn"]
+            colors = continuous_palettes.palettes["diverging_purple_green"]
         else:
             # other quality features are within [0,1] (neighborhood preservation)
             range = [0, 1]
