@@ -2,6 +2,7 @@
 
 TRACE<sup>[1](#trace)</sup> supports you in analyzing **global and local quality 🕵🏽‍♀️** of two-dimensional embeddings, based on [Regl-scatterplot](https://github.com/flekschas/regl-scatterplot)<sup>[2](#regl_citation)</sup> .
 
+![screenshot](data/TRACE_screenshot.png)
 
 ## Installation
 
