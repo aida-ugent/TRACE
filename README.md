@@ -163,6 +163,18 @@ This dataset from Wang et al. can be downloaded from their [PaCMAP](https://gith
 The processed dataset of gene expressions from [Guilliams et al.](https://pubmed.ncbi.nlm.nih.gov/35021063/) is not available online, please reach out if you are interested. A raw version is available under [GSE192742](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE192742).
 
 
+## Citation
+TRACE will be presented as a demo paper at ECML-PKDD 2024. If you find the tool useful and are using it in your research, we'd appreciate if you could cite our paper:
+
+```bibtex
+@unpublished{heiter2024pattern,
+    title={Pattern or Artifact? Interactively Exploring Embedding Quality with TRACE},
+    author={Edith Heiter and Liesbet Martens and Ruth Seurinck and Martin Guilliams and Tijl De Bie and Yvan Saeys and Jefrey Lijffijt},
+    year={2024},
+    note={arXiv:2406.12953}
+}
+```
+
 ***
 
 <a name="trace">[1]</a> TRACE stands for Two-dimensional representation Analysis and Comparison Engine<br />

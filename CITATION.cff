@@ -1,0 +1,45 @@
+cff-version: 1.2.0
+title: Pattern or Artifact? Interactively Exploring Embedding Quality with TRACE
+message: >-
+  If you are using TRACE, please cite our paper which will
+  be presented at the Demo track of ECML-PKDD 2024:
+type: software
+authors:
+  - family-names: Heiter
+    given-names: Edith
+  - family-names: Martens
+    given-names: Liesbet
+  - family-names: Seurinck
+    given-names: Ruth
+  - family-names: Guilliams
+    given-names: Martin
+  - family-names: De Bie
+    given-names: Tijl
+  - family-names: Saeys
+    given-names: Yvan
+  - family-names: Lijffijt
+    given-names: Jefrey
+identifiers:
+  - type: doi
+    value: 10.48550/arXiv.2406.12953
+repository-code: "https://github.com/aida-ugent/TRACE"
+license: MIT
+preferred-citation:
+  type: unpublished	
+  authors:
+    - family-names: Heiter
+      given-names: Edith
+    - family-names: Martens
+      given-names: Liesbet
+    - family-names: Seurinck
+      given-names: Ruth
+    - family-names: Guilliams
+      given-names: Martin
+    - family-names: De Bie
+      given-names: Tijl
+    - family-names: Saeys
+      given-names: Yvan
+    - family-names: Lijffijt
+      given-names: Jefrey
+  title: "Pattern or Artifact? Interactively Exploring Embedding Quality with TRACE"
+  year: 2024
