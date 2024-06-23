@@ -129,6 +129,8 @@ export function SettingsMenu(props) {
     handleHDNeighbors,
     pointColorScaling,
     handlePointColorScaling,
+    hoverNeighborsEnabled,
+    setHoverNeighborsEnabled,
     children } = props
 
   const [visibility, setVisibility] = useState('visible')
@@ -359,10 +361,26 @@ export function SettingsMenu(props) {
                   menuPlacement={'top'}
                 />
               </div>
-              {/* kNN */}
-              {/* <div className='flex flex-col items-left my-2 justify-between'>
-              <NamedSlider onChange={handlekNeighborSelect} defaultValue={kNeighbors} min="0" max={maxNeighbors} step="10" label="neighbors" />
-            </div> */}
+            </div>
+
+            {/* Hover neighbors */}
+            <div className="flex items-start justify-start">
+              <label className="text-sm text-gray-500 w-fit min-w-fit" >show HD neighbors on hover</label>
+              <span className="ml-3">
+                <Switch
+                  id='hoverSwitch'
+                  checked={hoverNeighborsEnabled}
+                  onChange={(enabled) => setHoverNeighborsEnabled(enabled)}
+                  className={`${hoverNeighborsEnabled ? 'bg-blue-600' : 'bg-gray-200'
+                    } relative inline-flex h-5 w-9 items-center rounded-full transition-colors 
+                                    focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+                >
+                  <span
+                    className={`${hoverNeighborsEnabled ? 'translate-x-5' : 'translate-x-1'
+                      } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
+                  />
+                </Switch>
+              </span>
             </div>
 
             <span className="text-sm text-gray-500 text-left my-2">

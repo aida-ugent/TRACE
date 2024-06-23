@@ -101,6 +101,62 @@ export const isSameElements = (a, b) => {
     return b.every((value) => aSet.has(value));
 };
 
+export function update_opacity({
+    embedding,
+    opacities,
+    pointColor,
+    preventFilterReset = true,
+    opacityBy = null,
+    opacityValues = null }) {
+
+    if (!preventFilterReset) resetPointFilter();
+    const spatialIndex = scatterplot.get('spatialIndex');
+    scatterplot.draw({
+        x: embedding['x'],
+        y: embedding['y'],
+        z: pointColor["encoded_values"],
+        w: opacities
+    }, {
+        spatialIndex: spatialIndex,
+        filter: preventFilterReset ? filteredPoints : undefined
+    }
+    ).then(() => {
+        scatterplot.set({
+            opacityBy: opacityBy != null ? opacityBy : scatterplot.get('opacityBy'),
+            opacity: opacityValues != null ? opacityValues : scatterplot.get('opacity'),
+        });
+    })
+};
+
+function update_point_color({
+    embedding,
+    pointColor,
+    colorMap,
+    opacities,
+    preventFilterReset = true,
+}) {
+
+    if (!preventFilterReset) resetPointFilter();
+    const spatialIndex = scatterplot.get('spatialIndex');
+
+    scatterplot.draw({
+        x: embedding['x'],
+        y: embedding['y'],
+        z: pointColor["encoded_values"],
+        w: opacities,
+    }, {
+        spatialIndex: spatialIndex,
+        filter: preventFilterReset ? filteredPoints : undefined,
+        zDataType: pointColor["type"]
+    }
+    ).then(() => {
+        scatterplot.set({
+            pointColor: colorMap["colors"],
+        })
+    })
+};
+
+
 function showEmbedding({
     embedding, pointColor, colorMap, opacities, useTransition = true,
     preventFilterReset = true, opacityBy = null, setLoadingFn = null,
@@ -191,6 +247,12 @@ export default function Scatterplot() {
     const [maxNeighbors, setMaxNeighbors] = useState(0);
     const [datasetName, setDatasetName] = useState(null);
 
+    // hover over points to show HD neighbors
+    const [hoverNeighborsEnabled, setHoverNeighborsEnabled] = useState(false);
+    const [pointOverUnsubscriber, setPointOverUnsubscriber] = useState(null);
+    const [pointOutUnsubscriber, setPointOutUnsubscriber] = useState(null)
+    var timeOutHover = null;
+
     const handleDatasetSelect = (newDatasetName) => {
         console.log(`handleDatasetSelect ${newDatasetName}`)
         setDatasetName(newDatasetName);
@@ -210,7 +272,7 @@ export default function Scatterplot() {
             let numTicks = colorMap["ticks"].length;
             let range_diff = Math.max(...colorMap["ticks"]) - Math.min(...colorMap["ticks"]);
             let newTickPositions = Array.from({ length: numTicks }, (_, i) => i / (numTicks - 1));
-            newTickPositions = newTickPositions.map(v => { return Math.pow(v, 1/pointColorScaling) * range_diff + Math.min(...colorMap["ticks"])});
+            newTickPositions = newTickPositions.map(v => { return Math.pow(v, 1 / pointColorScaling) * range_diff + Math.min(...colorMap["ticks"]) });
 
             let newColorMap = {};
             newColorMap["ticks"] = newTickPositions
@@ -317,12 +379,11 @@ export default function Scatterplot() {
         console.log(`handlePointColorSelect ${newPointColor}`)
         getPointColors(embeddingName, newPointColor, setBackendStatus, selectedMetric)
             .then((res) => {
-                showEmbedding({
+                update_point_color({
                     embedding: activeEmbedding,
                     pointColor: res,
-                    colorMap: res["colorMap"],
                     opacities: opacities,
-                    useTransition: false,
+                    colorMap: res["colorMap"],
                     preventFilterReset: false
                 });
                 setSelectedPointColor(newPointColor);
@@ -333,6 +394,52 @@ export default function Scatterplot() {
             })
     }
 
+    // ##### HD Neighbors Hover ############
+    const handlePointOver = (pointId) => {
+        clearTimeout(timeOutHover) // cancel the previous hover (bc we're already hovering a different point)
+        timeOutHover = setTimeout(() =>
+            getHDNeighbors([pointId], kNeighbors, selectedMetric)
+                .then((binary_neighbors) => {
+                    update_opacity({
+                        embedding: activeEmbedding,
+                        opacities: binary_neighbors,
+                        pointColor: pointColors,
+                        preventFilterReset: true,
+                        opacityBy: "w",
+                        opacityValues: [0.03, 1],
+                    })
+                }), activeEmbedding["x"].length > 100000 ? 100 : 30);
+    };
+
+    const handlePointOut = () => {
+        clearTimeout(timeOutHover);
+        scatterplot.set({ opacityBy: 'density' });
+    }
+
+    const subscribeNeighborHover = () => {
+        clearTimeout(timeOutHover);
+        if (hoverNeighborsEnabled) {
+            if (pointOverUnsubscriber === null) {
+                setPointOverUnsubscriber(scatterplot.subscribe('pointover', handlePointOver));
+            } else {
+                scatterplot.unsubscribe(pointOverUnsubscriber);
+                setPointOverUnsubscriber(scatterplot.subscribe('pointover', handlePointOver))
+            }
+
+            if (pointOutUnsubscriber === null) {
+                setPointOutUnsubscriber(scatterplot.subscribe('pointout', handlePointOut));
+            }
+            console.log(`subscribed hover with kNN ${kNeighbors}, ${embeddingName}`)
+        } else {
+            if (pointOverUnsubscriber !== null) {
+                scatterplot.unsubscribe(pointOverUnsubscriber);
+            }
+            if (pointOutUnsubscriber !== null) {
+                scatterplot.unsubscribe(pointOutUnsubscriber);
+            }
+        }
+    }
+
     const handleHDNeighbors = (kNeighbors, metric) => {
         let selectedPoints = scatterplot.get('selectedPoints');
         return new Promise((resolve, reject) => {
@@ -340,12 +447,10 @@ export default function Scatterplot() {
                 getHDNeighbors(selectedPoints, kNeighbors, metric)
                     .then((binary_neighbors) => {
                         setOpacities(binary_neighbors);
-                        showEmbedding({
+                        update_opacity({
                             embedding: activeEmbedding,
-                            pointColor: pointColors,
-                            colorMap: colorMap,
                             opacities: binary_neighbors,
-                            useTransition: false,
+                            pointColor: pointColors,
                             preventFilterReset: true,
                             opacityBy: "w",
                             opacityValues: [0.03, 1]
@@ -449,6 +554,12 @@ export default function Scatterplot() {
         }
     }, [scatterLoaded, isLoading, isLoadingData]);
 
+    useEffect(() => {
+        if (scatterplot !== undefined) {
+            subscribeNeighborHover();
+        }
+    }, [scatterplot, kNeighbors, activeEmbedding, selectedMetric, pointColors, hoverNeighborsEnabled])
+
     if (isError) {
         return (
             <div role="status" className="absolute w-screen h-screen bg-white bg-opacity-75 flex justify-center items-center flex-col">
@@ -543,6 +654,8 @@ export default function Scatterplot() {
                     handleHDNeighbors={handleHDNeighbors}
                     pointColorScaling={pointColorScaling}
                     handlePointColorScaling={handlePointColorScaling}
+                    hoverNeighborsEnabled={hoverNeighborsEnabled}
+                    setHoverNeighborsEnabled={setHoverNeighborsEnabled}
                 >
                     {/* Dataset */}
                     <div className="flex flex-col items-left my-2 justify-between">
