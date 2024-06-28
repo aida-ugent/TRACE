@@ -291,9 +291,8 @@ export function SettingsMenu(props) {
               pointColorOptions={pointColorOptions} />
 
             {/* Legend */}
-            <Switch.Group>
               <div className="flex flex-wrap items-start my-2 justify-start">
-                <Switch.Label className="text-sm text-gray-500 w-fit min-w-fit mr-2" htmlFor='hoverSwitch'>show legend</Switch.Label>
+                <label className="text-sm text-gray-500 w-fit min-w-fit mr-2" htmlFor='hoverSwitch'>show legend</label>
                 {/* <div className="w-1/2 flex items-start justify-start"> */}
                 <span className="ml-1">
                   <Switch
@@ -312,7 +311,6 @@ export function SettingsMenu(props) {
                   {/* </div> */}
                 </span>
               </div>
-            </Switch.Group>
 
             {/* Point Color Scaling */}
             {/* <div className='flex flex-col w-full items-left pr-2 justify-between'>
