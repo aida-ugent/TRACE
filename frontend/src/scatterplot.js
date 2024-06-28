@@ -80,7 +80,7 @@ const getPointColors = (embName, featureName, setBackendStatus = () => { }, sele
     if (scatterplot != null) {
         const selected = scatterplot.get('selectedPoints')
         if (selected.length == 1) {
-            fetchStr = `/backend/pointColor/${featureName}?embeddingName=${embName}&selectedPoint=${selected[0]}&hdMetric=${selectedMetric}`;
+            fetchStr = `${fetchStr}&selectedPoint=${selected[0]}&hdMetric=${selectedMetric}`;
         }
     }
     setBackendStatus({ "loading": true, "message": `Fetching ${featureName}...` });
