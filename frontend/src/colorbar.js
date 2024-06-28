@@ -1,5 +1,5 @@
 export function Colorbar(props) {
-    const { colormap, title, visibility } = props;
+    const { colormap, title, visibility, zoomColorbar } = props;
     let items, colors;
 
     if (colormap instanceof Map) {
@@ -59,6 +59,28 @@ export function Colorbar(props) {
             {title !== "none" && (
                 <div className={`${visibility} flex-col select-none h-fit w-fit max-w-[200px] overflow-auto bg-white/90 rounded-lg bg-clip-border mt-1 px-2 pt-1 pb-2`}>
                     <h4>{title}</h4>
+                    <div className="flex flex-row">
+                        <button
+                            type="button"
+                            className="h-fit select-none inline-flex rounded-full bg-transparent text-sm font-medium 
+                                leading-normal text-slate-500 border-none hover:no-underline focus:shadow-none focus:outline-none hover:text-slate-800"
+                            onClick={() => zoomColorbar(2)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" />
+                            </svg>
+                        </button>
+                        <button
+                            type="button"
+                            className="h-fit select-none inline-flex rounded-full bg-transparent text-sm font-medium 
+                                leading-normal text-slate-500 border-none hover:no-underline focus:shadow-none focus:outline-none hover:text-slate-800"
+                            onClick={() => zoomColorbar(0.5)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM13.5 10.5h-6" />
+                            </svg>
+                        </button>
+                    </div>
                     <div className="flex flex-row min-h-[200px]">
                         <div className="flex select-none w-[20px] min-h-full rounded-sm bg-clip-border mt-2 mb-2" style={{ background: bg_color }}></div>
                         <div className="flex min-w-fit flex-col justify-between">

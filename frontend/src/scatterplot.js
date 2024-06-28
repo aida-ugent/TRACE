@@ -118,7 +118,7 @@ export function update_opacity({
         w: opacities
     }, {
         spatialIndex: spatialIndex,
-        filter: preventFilterReset ? filteredPoints : undefined
+        preventFilterReset: preventFilterReset,
     }
     ).then(() => {
         scatterplot.set({
@@ -146,7 +146,7 @@ function update_point_color({
         w: opacities,
     }, {
         spatialIndex: spatialIndex,
-        filter: preventFilterReset ? filteredPoints : undefined,
+        preventFilterReset: preventFilterReset,
         zDataType: pointColor["type"]
     }
     ).then(() => {
@@ -177,8 +177,7 @@ function showEmbedding({
                 transition: useTransition,
                 transitionDuration: 1500,
                 transitionEasing: 'quadInOut',
-                // preventFilterReset: preventFilterReset,
-                filter: preventFilterReset ? filteredPoints : undefined,
+                preventFilterReset: preventFilterReset,
                 zDataType: pointColor["type"]
             }
         ).then(() => {
@@ -280,14 +279,45 @@ export default function Scatterplot() {
 
             setColorMap(newColorMap);
             setPointColors(newPointColor);
-            showEmbedding({
+            update_point_color({
                 embedding: activeEmbedding,
-                pointColor: newPointColor,
-                opacities: opacities,
+                pointColor: newPointColors,
                 colorMap: newColorMap,
-                useTransition: false,
-                preventFilterReset: true
-            });
+            })
+        }
+    }
+
+    function zoomColorbar(zoomFactor) {
+        if ((pointColors["type"] == "continuous") && (zoomFactor != 0.0)) {
+            const newPointColors = { ...pointColors };
+            const oldZoomFactor = pointColors.hasOwnProperty("scaling") ? pointColors["scaling"] : 1.0;
+
+            // what are the original bounds of the colorbar?
+            const bar_min = Math.min(...colorMap["ticks"]) * oldZoomFactor;
+            const bar_max = Math.max(...colorMap["ticks"]) * oldZoomFactor;
+
+            // adjust the colorbar range
+            const bar_min_new = bar_min / (oldZoomFactor * zoomFactor);
+            const bar_max_new = bar_max / (oldZoomFactor * zoomFactor);
+
+            // scale original values to [0,1] using the new range
+            var scaled_encoded_values = pointColors["values"].map(v => (v - bar_min_new) / (bar_max_new - bar_min_new));
+            scaled_encoded_values = scaled_encoded_values.map(v => Math.max(0, Math.min(1.0, v)));
+            newPointColors["encoded_values"] = scaled_encoded_values;
+            newPointColors["scaling"] = oldZoomFactor * zoomFactor;
+
+            // adjust the colorMap ticks
+            let newColorMap = { ...colorMap };
+            newColorMap["ticks"] = colorMap["ticks"].map(v => v * (1 / zoomFactor));
+
+            setColorMap(newColorMap);
+            setPointColors(newPointColors);
+
+            update_point_color({
+                embedding: activeEmbedding,
+                pointColor: newPointColors,
+                colorMap: newColorMap,
+            })
         }
     }
 
@@ -404,7 +434,6 @@ export default function Scatterplot() {
                         embedding: activeEmbedding,
                         opacities: binary_neighbors,
                         pointColor: pointColors,
-                        preventFilterReset: true,
                         opacityBy: "w",
                         opacityValues: [0.03, 1],
                     })
@@ -433,9 +462,11 @@ export default function Scatterplot() {
         } else {
             if (pointOverUnsubscriber !== null) {
                 scatterplot.unsubscribe(pointOverUnsubscriber);
+                setPointOverUnsubscriber(null);
             }
             if (pointOutUnsubscriber !== null) {
                 scatterplot.unsubscribe(pointOutUnsubscriber);
+                setPointOutUnsubscriber(null);
             }
         }
     }
@@ -451,7 +482,6 @@ export default function Scatterplot() {
                             embedding: activeEmbedding,
                             opacities: binary_neighbors,
                             pointColor: pointColors,
-                            preventFilterReset: true,
                             opacityBy: "w",
                             opacityValues: [0.03, 1]
                         });
@@ -682,6 +712,7 @@ export default function Scatterplot() {
                                 colormap={colorMap}
                                 title={selectedPointColor}
                                 visibility={legendVisibility}
+                                zoomColorbar={zoomColorbar}
                             />
                     }
                 </div>
