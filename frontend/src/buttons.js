@@ -8,7 +8,7 @@ export function DefaultButton(props) {
     <button
       type="button"
       className="min-w-[100px] h-fit select-none justify-center items-center 
-      rounded-md bg-slate-500 text-gray-50 mx-1 my-1 px-4 pb-1 pt-1.5 text-sm font-medium leading-normal
+      rounded-md bg-slate-500 text-gray-50 mr-2 my-1 px-4 pb-1 pt-1.5 text-sm font-medium leading-normal
        border-0 drop-shadow-sm border border-gray-600 hover:no-underline hover:bg-slate-800
        hover:opacity-75 hover:text-gray-50 focus:opacity-100 focus:shadow-none 
       focus:outline-none disabled:opacity-75 disabled:bg-gray-700 disabled:text-gray-50"
@@ -27,7 +27,7 @@ export function SubmitButton(props) {
     <button
       type="submit"
       className="min-w-[100px] h-fit select-none justify-center items-center 
-      rounded-md bg-slate-500 text-gray-50 mx-1 my-1 px-4 pb-1 pt-1.5 text-sm font-medium leading-normal
+      rounded-md bg-slate-500 text-gray-50 mr-2 my-1 px-4 pb-1 pt-1.5 text-sm font-medium leading-normal
        border-0 drop-shadow-sm border border-gray-600 hover:no-underline hover:bg-slate-800
        hover:opacity-75 hover:text-gray-50 focus:opacity-100 focus:shadow-none 
       focus:outline-none disabled:opacity-75 disabled:bg-gray-700 disabled:text-gray-50"
@@ -67,7 +67,7 @@ export function AsyncButton(props) {
       <button
         type="button"
         className="min-w-[100px] h-fit select-none justify-center items-center 
-        rounded-md bg-slate-500 text-gray-50 mx-1 my-1 px-4 pb-1 pt-1.5 text-sm font-medium leading-normal
+        rounded-md bg-slate-500 text-gray-50 mr-2 my-1 px-4 pb-1 pt-1.5 text-sm font-medium leading-normal
          border-0 drop-shadow-sm border border-gray-600 hover:no-underline hover:bg-slate-800
          hover:opacity-75 hover:text-gray-50 focus:opacity-100 focus:shadow-none 
         focus:outline-none disabled:opacity-75 disabled:bg-gray-700 disabled:text-gray-50"
