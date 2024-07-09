@@ -625,9 +625,10 @@ export default function Scatterplot() {
                         <div className="flex items-center min-w-[250px] p-2 justify-between">
                             <button
                                 type="button"
-                                className="h-fit select-none inline-flex rounded-full bg-slate-500 mx-2 p-1 text-sm font-medium 
-                                leading-normal text-white border-none hover:no-underline hover:opacity-75 focus:opacity-100 
-                                focus:shadow-none focus:outline-none hover:bg-slate-800"
+                                className="h-fit select-none inline-flex rounded-full bg-white p-2 text-sm font-medium 
+                                leading-normal text-slate-400
+                                hover:no-underline hover:opacity-100 hover:text-slate-900 
+                                focus:shadow-none focus:outline-none focus:opacity-100"
                                 onClick={() => handleEmbeddingSelect(getPreviousEmbeddingName(embeddingName))}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5">
@@ -637,9 +638,10 @@ export default function Scatterplot() {
                             <GroupedSelect onChange={handleEmbeddingSelect} options={embeddingOptions} selected={embeddingName} />
                             <button
                                 type="button"
-                                className="h-fit select-none inline-flex rounded-full bg-slate-500 mx-2 p-1 text-sm font-medium 
-                                leading-normal text-white border-none hover:no-underline hover:opacity-75 focus:opacity-100 
-                                focus:shadow-none focus:outline-none hover:bg-slate-800"
+                                className="h-fit select-none inline-flex rounded-full bg-white p-2 text-sm font-medium 
+                                leading-normal text-slate-400
+                                hover:no-underline hover:opacity-100 hover:text-slate-900 
+                                focus:shadow-none focus:outline-none focus:opacity-100"
                                 onClick={() => handleEmbeddingSelect(getNextEmbeddingName(embeddingName))}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5">
