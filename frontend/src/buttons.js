@@ -168,9 +168,10 @@ export function SettingsButton(props) {
   return (
     <button
       type="button"
-      className="select-none inline-block rounded-full bg-slate-500 mx-2 p-2 text-sm font-medium 
-      leading-normal text-white border-none hover:no-underline hover:opacity-75 focus:opacity-100 
-      focus:shadow-none focus:outline-none hover:bg-slate-800"
+      className="select-none inline-block bg-transparent mx-2 p-2 text-sm font-medium 
+      leading-normal text-slate-400 border-none 
+      hover:no-underline hover:text-slate-900
+      focus:opacity-100 focus:shadow-none focus:outline-none "
       onClick={props.onClick}
     >
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
@@ -185,9 +186,10 @@ export function ChevronRightButton(props) {
   return (
     <button
       type="button"
-      className="select-none inline-block rounded-full bg-slate-500 p-2 text-sm font-medium 
-      leading-normal text-white border-none hover:no-underline hover:opacity-75 focus:opacity-100 
-      focus:shadow-none focus:outline-none hover:bg-slate-800"
+      className="select-none inline-block bg-transparent pt-3 px-1 text-sm font-medium 
+      leading-normal text-slate-400 border-none 
+      hover:no-underline hover:text-slate-900
+      focus:opacity-100 focus:shadow-none focus:outline-none "
       onClick={props.onClick}
     >
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-6 h-6">

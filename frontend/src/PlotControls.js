@@ -220,225 +220,199 @@ export function SettingsMenu(props) {
     return (
       <>
         <div className="select-none right-0 w-1/4 min-w-[380px] h-screen max-h-screen bg-gray-100">
-          <span className="relative">
-            <div className="absolute -left-[30px] top-2">
+          <div className="relative">
+            <div className="absolute -left-[32px]">
               <ChevronRightButton onClick={toggleVisibility} />
             </div>
-          </span>
+          </div>
 
-          <div className="flex flex-col h-screen max-h-screen items-top justify-start text-center p-5 pt-12 overflow-y-auto">
+          <div className="flex flex-col h-screen max-h-screen items-top justify-start text-center overflow-y-auto">
+            <Tabs>
+              <Tab label="Settings">
+                {children}
 
-            <h3 className="text-lg font-medium leading-6 text-gray-900 w-fit" >
-              Settings
-            </h3>
-
-            {children}
-
-            {/* Point Colors */}
-            <div className="flex flex-col items-left my-2 justify-between">
-              <label className="text-sm text-gray-500 w-fit min-w-fit" >point colors</label>
-              <GroupedSelect onChange={pointColorOnChange} options={pointColorOptions} selected={selectedPointColor} />
-            </div>
-
-            <div className='flex flex-wrap items-center justify-between my-2'>
-              {/* Point Size */}
-              <div className='flex flex-col w-1/2 items-left pr-2 justify-between'>
-                <label className="text-sm text-gray-500 w-fit min-w-fit" htmlFor="pointSizeSlider">point size</label>
-                <input
-                  className="transparent h-[2px] cursor-pointer appearance-none 
-                border-transparent bg-neutral-300 mb-2 mt-3"
-                  type="range"
-                  min={0.1}
-                  max={10}
-                  step={0.1}
-                  value={pointSize}
-                  //defaultValue={pointSize}
-                  onChange={(event) => handlePointSizeSelect(+event.target.value)}
-                  id="pointSizeSlider" />
-              </div>
-
-              {/* Point Opacity */}
-              <div className='flex flex-col w-1/2 items-left pl-2 justify-between'>
-                <div className="flex flex-row items-center justify-left">
-                  <label className="text-sm text-gray-500 w-fit min-w-fit" htmlFor="opacityCheckbox">opacity by density</label>
-                  <Checkbox
-                    text=""
-                    id='opacityCheckbox'
-                    checked={opacityByDensity}
-                    onChange={toggleOpacityByDensity}
-                  />
-                </div>
-                <input
-                  className={`transparent h-[2px] w-full appearance-none border-transparent bg-neutral-300 
-                              mb-2 mt-3 ${opacityByDensity ? 'accent-slate-100' : 'cursor-pointer'}`}
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.001}
-                  value={opacity['slider']}
-                  onChange={(event) => handleOpacitySelect(+event.target.value)}
-                  id="pointOpacitySlider"
-                  disabled={opacityByDensity}
-                />
-              </div>
-            </div>
-
-
-            {/* Infobox */}
-            <Infobox
-              scatterplot={scatterplot}
-              selectedPointColor={selectedPointColor}
-              pointColors={pointColors}
-              colorMap={colorMap}
-              pointColorOptions={pointColorOptions} />
-
-            {/* Legend */}
-            <div className="flex flex-wrap items-start my-2 justify-start">
-              <label className="text-sm text-gray-500 w-fit min-w-fit mr-2" htmlFor='hoverSwitch'>show legend</label>
-              {/* <div className="w-1/2 flex items-start justify-start"> */}
-              <span className="ml-1">
-                <Switch
-                  id='hoverSwitch'
-                  checked={legendVisibility == "visible" ? true : false}
-                  onChange={toggleLegendVisibility}
-                  className={`${legendVisibility == "visible" ? 'bg-blue-600' : 'bg-gray-200'
-                    } relative inline-flex h-5 w-9 items-center rounded-full transition-colors 
-                      focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
-                >
-                  <span
-                    className={`${legendVisibility == "visible" ? 'translate-x-5' : 'translate-x-1'
-                      } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
-                  />
-                </Switch>
-                {/* </div> */}
-              </span>
-            </div>
-
-            {/* Point Color Scaling */}
-            {/* <div className='flex flex-col w-full items-left pr-2 justify-between'>
-              <label className="text-sm text-gray-500 w-fit min-w-fit" htmlFor="pointSizeSlider">scale point color with exponent {pointColorScaling}</label>
-              <input
-                className="transparent h-[2px] cursor-pointer appearance-none 
-                border-transparent bg-neutral-300 mb-2 mt-3"
-                type="range"
-                min={0.1}
-                max={5}
-                step={0.1}
-                value={pointColorScaling}
-                onChange={(event) => handlePointColorScaling(+event.target.value)}
-                id="pointSizeSlider"
-                disabled={pointColors["type"] == "categorical" ? true : false} />
-            </div> */}
-
-
-            {/* Neighbors */}
-            <h3 className="text-lg font-medium leading-6 text-gray-900 w-fit mt-6" >
-              Embedding Quality
-            </h3>
-
-            {/* Distance measures */}
-            <div className="flex flex-col items-left my-2 justify-between">
-              <div className='flex flex-row'>
-                <label className="text-sm text-gray-500 w-fit min-w-fit mr-1">HD metric</label>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"
-                  className="size-5 cursor-pointer text-gray-500"
-                  data-tooltip-id="hdmetric-tooltip">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
-                </svg>
-              </div>
-              <ReactSelect
-                options={metricOptions}
-                selected={selectedMetric}
-                onChange={metricOnChange}
-                menuPlacement={'top'}
-              />
-            </div>
-
-            <h4 className="text-md font-large leading-6 text-gray-900 w-fit mt-3" >
-              High-dimensional neighbors
-            </h4>
-            <p className="text-sm text-gray-500 text-left my-1">
-              Visualize the high-dimensional neighbors of any point in the 2D embedding to explore the local quality.
-            </p>
-
-            {/* K Neighbors */}
-            <div className='flex flex-wrap items-start justify-between my-2'>
-              <div className='flex flex-col w-1/2 items-left pr-2 justify-between'>
-                <div className='flex flex-row'>
-                  <label className="text-sm text-gray-500 w-fit min-w-fit mr-1" htmlFor="neighborsSlider">neighbors {kNeighbors}</label>
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"
-                    className="size-5 cursor-pointer text-gray-500"
-                    data-tooltip-id="neighbors-tooltip">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
-                  </svg>
+                {/* Point Colors */}
+                <div className="flex flex-col items-left my-2 justify-between">
+                  <label className="text-sm text-gray-500 w-fit min-w-fit" >point colors</label>
+                  <GroupedSelect onChange={pointColorOnChange} options={pointColorOptions} selected={selectedPointColor} />
                 </div>
 
-                <input
-                  className="transparent h-[2px] cursor-pointer appearance-none 
-                border-transparent bg-neutral-300 mb-2 mt-3"
-                  type="range"
-                  min={0}
-                  max={maxNeighbors}
-                  step={10}
-                  defaultValue={kNeighbors}
-                  onChange={(event) => handlekNeighborSelect(+event.target.value)}
-                  id="neighborsSlider" />
-              </div>
+                <div className='flex flex-wrap items-center justify-between my-2'>
+                  {/* Point Size */}
+                  <div className='flex flex-col w-1/2 items-left pr-2 justify-between'>
+                    <label className="text-sm text-gray-500 w-fit min-w-fit" htmlFor="pointSizeSlider">point size</label>
+                    <input
+                      className="transparent h-[2px] cursor-pointer appearance-none border-transparent bg-neutral-300 mb-2 mt-3"
+                      type="range"
+                      min={0.1}
+                      max={10}
+                      step={0.1}
+                      value={pointSize}
+                      //defaultValue={pointSize}
+                      onChange={(event) => handlePointSizeSelect(+event.target.value)}
+                      id="pointSizeSlider" />
+                  </div>
 
-
-              {/* Hover neighbors */}
-              <div className="flex-row items-start text-left justify-left w-1/2 pl-2">
-                <label className="text-sm text-gray-500 w-fit min-w-fit" >show on hover</label>
-                <span className="ml-3">
-                  <Switch
-                    id='hoverSwitch'
-                    checked={hoverNeighborsEnabled}
-                    onChange={(enabled) => setHoverNeighborsEnabled(enabled)}
-                    className={`${hoverNeighborsEnabled ? 'bg-blue-600' : 'bg-gray-200'
-                      } relative inline-flex h-5 w-9 items-center rounded-full transition-colors 
-                                    focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
-                  >
-                    <span
-                      className={`${hoverNeighborsEnabled ? 'translate-x-5' : 'translate-x-1'
-                        } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
+                  {/* Point Opacity */}
+                  <div className='flex flex-col w-1/2 items-left pl-2 justify-between'>
+                    <div className="flex flex-row items-center justify-left">
+                      <label className="text-sm text-gray-500 w-fit min-w-fit" htmlFor="opacityCheckbox">opacity by density</label>
+                      <Checkbox
+                        text=""
+                        id='opacityCheckbox'
+                        checked={opacityByDensity}
+                        onChange={toggleOpacityByDensity}
+                      />
+                    </div>
+                    <input
+                      className={`transparent h-[2px] w-full appearance-none border-transparent bg-neutral-300 
+                  mb-2 mt-3 ${opacityByDensity ? 'accent-slate-100' : 'cursor-pointer'}`}
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.001}
+                      value={opacity['slider']}
+                      onChange={(event) => handleOpacitySelect(+event.target.value)}
+                      id="pointOpacitySlider"
+                      disabled={opacityByDensity}
                     />
-                  </Switch>
+                  </div>
+                </div>
+
+                {/* Infobox */}
+                <Infobox
+                  scatterplot={scatterplot}
+                  selectedPointColor={selectedPointColor}
+                  pointColors={pointColors}
+                  colorMap={colorMap}
+                  pointColorOptions={pointColorOptions} />
+
+                {/* Legend */}
+                <div className="flex flex-wrap items-start my-2 justify-start">
+                  <label className="text-sm text-gray-500 w-fit min-w-fit mr-2" htmlFor='hoverSwitch'>show legend</label>
+                  {/* <div className="w-1/2 flex items-start justify-start"> */}
+                  <span className="ml-1">
+                    <Switch
+                      id='hoverSwitch'
+                      checked={legendVisibility == "visible" ? true : false}
+                      onChange={toggleLegendVisibility}
+                      className={`${legendVisibility == "visible" ? 'bg-blue-600' : 'bg-gray-200'
+                        } relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+                    >
+                      <span
+                        className={`${legendVisibility == "visible" ? 'translate-x-5' : 'translate-x-1'
+                          } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
+                      />
+                    </Switch>
+                    {/* </div> */}
+                  </span>
+                </div>
+              </Tab>
+              <Tab label="Embedding Quality">
+                {/* Distance measures */}
+                <div className="flex flex-col items-left my-2 justify-between">
+                  <div className='flex flex-row'>
+                    <label className="text-sm text-gray-500 w-fit min-w-fit mr-1">HD metric</label>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"
+                      className="size-5 cursor-pointer text-gray-500"
+                      data-tooltip-id="hdmetric-tooltip">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                    </svg>
+                  </div>
+                  <ReactSelect
+                    options={metricOptions}
+                    selected={selectedMetric}
+                    onChange={metricOnChange}
+                    menuPlacement={'top'}
+                  />
+                </div>
+
+                <h4 className="text-md font-large leading-6 text-gray-900 w-fit mt-3" >
+                  High-dimensional neighbors
+                </h4>
+                <p className="text-sm text-gray-500 text-left my-1">
+                  Visualize the high-dimensional neighbors of any point in the 2D embedding to explore the local quality.
+                </p>
+
+                {/* K Neighbors */}
+                <div className='flex flex-wrap items-start justify-between my-2'>
+                  <div className='flex flex-col w-1/2 items-left pr-2 justify-between'>
+                    <div className='flex flex-row'>
+                      <label className="text-sm text-gray-500 w-fit min-w-fit mr-1" htmlFor="neighborsSlider">neighbors {kNeighbors}</label>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"
+                        className="size-5 cursor-pointer text-gray-500"
+                        data-tooltip-id="neighbors-tooltip">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                      </svg>
+                    </div>
+
+                    <input
+                      className="transparent h-[2px] cursor-pointer appearance-none border-transparent bg-neutral-300 mb-2 mt-3"
+                      type="range"
+                      min={0}
+                      max={maxNeighbors}
+                      step={10}
+                      defaultValue={kNeighbors}
+                      onChange={(event) => handlekNeighborSelect(+event.target.value)}
+                      id="neighborsSlider" />
+                  </div>
+
+
+                  {/* Hover neighbors */}
+                  <div className="flex-row items-start text-left justify-left w-1/2 pl-2">
+                    <label className="text-sm text-gray-500 w-fit min-w-fit" >show on hover</label>
+                    <span className="ml-3">
+                      <Switch
+                        id='hoverSwitch'
+                        checked={hoverNeighborsEnabled}
+                        onChange={(enabled) => setHoverNeighborsEnabled(enabled)}
+                        className={`${hoverNeighborsEnabled ? 'bg-blue-600' : 'bg-gray-200'
+                          } relative inline-flex h-5 w-9 items-center rounded-full transition-colors 
+                                    focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+                      >
+                        <span
+                          className={`${hoverNeighborsEnabled ? 'translate-x-5' : 'translate-x-1'
+                            } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
+                        />
+                      </Switch>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Compute Neighbors */}
+                {/* <AsyncButton onClick={() => precomputeNeighborsSubscribe(maxNeighbors, selectedMetric)}>precompute neighbors</AsyncButton> */}
+
+                <div className='flex flex-wrap items-center mb-2 justify-left'>
+                  <span data-tooltip-id='hdneighbors-tooltip'>
+                    <AsyncButton onClick={() => handleHDNeighbors(kNeighbors, selectedMetric)}>HD neighbors</AsyncButton>
+                  </span>
+                  <span data-tooltip-id='intrusions-tooltip'>
+                    <AsyncButton onClick={() => showIntrusions(scatterplot, kNeighbors, selectedMetric)}>intrusions</AsyncButton>
+                  </span>
+                </div>
+
+
+                <h4 className="text-md font-large leading-6 text-gray-900 w-fit mt-3" >
+                  High-dimensional distances
+                </h4>
+                <p className="text-sm text-gray-500 text-left my-1">
+                  Select a single point to color points according to their HD distance. The point colors are based on the distances between&nbsp;
+                  <a onClick={() => showLandmarks(scatterplot)} className="underline cursor-pointer">landmark points</a>.
+                </p>
+                <div className='flex flex-wrap items-center mb-2 justify-left'>
+                  <DefaultButton onClick={() => pointColorOnChange("HD distances")}>
+                    HD distances
+                  </DefaultButton>
+                </div>
+
+                <span className="select-none text-sm text-gray-500 text-left my-2">
+                  <p> Add current point selection to user_annotations.json</p>
                 </span>
-              </div>
-            </div>
 
-            {/* Compute Neighbors */}
-            {/* <AsyncButton onClick={() => precomputeNeighborsSubscribe(maxNeighbors, selectedMetric)}>precompute neighbors</AsyncButton> */}
+                <SavePointForm scatterplot={scatterplot} />
+              </Tab>
 
-            <div className='flex flex-wrap items-center mb-2 justify-left'>
-              <span data-tooltip-id='hdneighbors-tooltip'>
-                <AsyncButton onClick={() => handleHDNeighbors(kNeighbors, selectedMetric)}>HD neighbors</AsyncButton>
-              </span>
-              <span data-tooltip-id='intrusions-tooltip'>
-                <AsyncButton onClick={() => showIntrusions(scatterplot, kNeighbors, selectedMetric)}>intrusions</AsyncButton>
-              </span>
-            </div>
-
-
-            <h4 className="text-md font-large leading-6 text-gray-900 w-fit mt-3" >
-              High-dimensional distances
-            </h4>
-            <p className="text-sm text-gray-500 text-left my-1">
-              Select a single point to color points according to their HD distance. The point colors are based on the distances between&nbsp;
-              <a onClick={() => showLandmarks(scatterplot)} className="underline cursor-pointer">landmark points</a>.
-            </p>
-            <div className='flex flex-wrap items-center mb-2 justify-left'>
-              <DefaultButton onClick={() => pointColorOnChange("HD distances")}>
-                HD distances
-              </DefaultButton>
-            </div>
-
-            <span className="select-none text-sm text-gray-500 text-left my-2">
-              <p> Add current point selection to user_annotations.json</p>
-            </span>
-
-            <SavePointForm scatterplot={scatterplot} />
-
+            </Tabs>
 
           </div>
         </div >
