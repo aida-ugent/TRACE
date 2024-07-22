@@ -252,6 +252,9 @@ export default function Scatterplot() {
     const [pointOutUnsubscriber, setPointOutUnsubscriber] = useState(null)
     var timeOutHover = null;
 
+    // ExClus
+    const [exclus, setExclus] = useState(null);
+
     const handleDatasetSelect = (newDatasetName) => {
         console.log(`handleDatasetSelect ${newDatasetName}`)
         setDatasetName(newDatasetName);
@@ -343,6 +346,7 @@ export default function Scatterplot() {
                                 setDatasetInfo(res["dataset_info"]);
                                 setDatasetName(res["dataset_name"]);
                                 setEmbeddingOptions(res["embedding_options"])
+                                setExclus(res["exclus"]);
                                 let newPointColorOptions = [];
                                 let groupOptions = Object.keys(res["point_color_options"])
                                 let newSelectedPointColor = res["point_color_options"][groupOptions[0]][0]
@@ -688,6 +692,7 @@ export default function Scatterplot() {
                     handlePointColorScaling={handlePointColorScaling}
                     hoverNeighborsEnabled={hoverNeighborsEnabled}
                     setHoverNeighborsEnabled={setHoverNeighborsEnabled}
+                    exclus={exclus}
                 >
                     {/* Dataset */}
                     <div className="flex flex-col items-left my-2 justify-between">
