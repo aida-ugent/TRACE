@@ -346,7 +346,7 @@ class Dataset:
             return []
 
     def get_precomputed_neighbors_maxK(self):
-        if "hd_neighbors" in self.adata.uns.keys():
+        if "hd_neighbors" in self.adata.uns.keys() and len(self.adata.uns["hd_neighbors"].keys()) > 0:
             return min([v.shape[1] for v in self.adata.uns["hd_neighbors"].values()])
         else:
             return 0
