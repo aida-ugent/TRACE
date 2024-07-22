@@ -193,7 +193,9 @@ async def getEmbedding(embName: str):
 
 
 @app.get("/backend/pointColor/{fname}")
-async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = None, hdMetric: str = None):
+async def getPointColors(
+    fname: str, embeddingName: str, selectedPoint: int = None, hdMetric: str = None
+):
     """Retrieve values for metadata or feature, normalize,
     and compute colormaps.
 
@@ -213,6 +215,7 @@ async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = No
     scale_continuous = True
     range = None
     fgroup = None
+    categorical_dtypes = ['object', 'category', 'bool']
 
     if fname == "HD distances" and (selectedPoint is not None and hdMetric is not None):
         # compute HD distances for selected point
@@ -227,8 +230,11 @@ async def getPointColors(fname: str, embeddingName: str, selectedPoint: int = No
         fgroup = "metadata"
 
         if (
-            dataset.adata.obs[fname].dtype.name == "category"
-            or dataset.adata.obs[fname].dtype.name == "object"
+            dataset.adata.obs[fname].dtype.name in categorical_dtypes
+            or (
+                "int" in dataset.adata.obs[fname].dtype.name
+                and len(dataset.adata.obs[fname].unique() < 15)
+            )
         ):
             ftype = "categorical"
             value_counts = list(fvalues.value_counts(ascending=False, sort=True).keys())
