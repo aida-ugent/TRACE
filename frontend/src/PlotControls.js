@@ -9,7 +9,6 @@ import Checkbox, { Radio } from "./checkbox";
 import { backend_url } from "./api";
 import { Tooltip } from 'react-tooltip';
 
-
 const showLandmarks = (scatterplot) => {
   fetch(`${backend_url}/backend/landmarkPoints/`)
     .then(response => {
@@ -414,8 +413,8 @@ export function SettingsMenu(props) {
               </Tab>
 
               <Tab label="ExClus">
-                { exclus != null && <h4 className="text-md font-large leading-6 text-gray-900 w-fit mt-3" >Interesting features for ExClus clusters</h4>}
-                { exclus == null && <h4 className="text-md font-large leading-6 text-gray-900 w-fit mt-3" >No ExClus clusters found</h4>}
+                {exclus != null && <h4 className="text-md font-large leading-6 text-gray-900 w-fit mt-3" >Interesting features for ExClus clusters</h4>}
+                {exclus == null && <h4 className="text-md font-large leading-6 text-gray-900 w-fit mt-3" >No ExClus clusters found</h4>}
                 <div className="flex flex-col items-left my-2 justify-between select-text">
                   {exclus != null && exclus.map(element => {
                     return <><p className="text-md  font-bold text-gray-900 text-left my-2">{element[0]}</p>

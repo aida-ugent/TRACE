@@ -37,7 +37,7 @@ export default function SelectionInfo(props) {
         <div className="select-none absolute bottom-2 right-2 w-fit bg-white/80 p-1 flex text-sm text-gray-500"
         >
             {numSelected > 0 &&
-                <p>{numSelected} selected</p>
+                <p>{numSelected} selected </p>
             }
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"
                 className="size-5 cursor-pointer text-gray-500 mr-1"

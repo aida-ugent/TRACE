@@ -10,6 +10,8 @@ import { ReactSelect, getPointSize } from "./utils"
 import GroupedSelect from "./groupedSelect"
 import { getHDNeighbors, backend_url } from "./api";
 import { saveAsPng } from './utils';
+import { Histogram } from "./histogram";
+
 
 let filteredPoints = [];
 let numPoints;
@@ -203,6 +205,47 @@ const fetchEmbedding = (embName, setBackendStatus = () => { }) => {
                 resolve(res)
             })
     })
+}
+
+const getHistogramData = (featureValues) => {
+    // split the feature values in two arrays, one with the selectedPoints and one with the rest
+    let selectedValues = [];
+    let unselectedValues = [];
+
+    if (scatterplot != null) {
+        const selectedPoints = scatterplot.get('selectedPoints');
+
+        selectedPoints.forEach((v) => {
+            selectedValues.push(featureValues[v]);
+        })
+
+        featureValues.forEach((v, i) => {
+            if (!selectedPoints.includes(i)) {
+                unselectedValues.push(v);
+            }
+        })
+
+        return [
+            {
+                name: "unselected",
+                values: unselectedValues,
+                color: "#989898",
+            },
+            {
+                name: "selected",
+                values: selectedValues,
+                color: "#800080",
+            },
+        ];
+    } else {
+        return [
+            {
+                name: "all",
+                values: featureValues,
+                color: "#989898",
+            },
+        ];
+    }
 }
 
 
@@ -704,6 +747,10 @@ export default function Scatterplot() {
                         />
                     </div>
 
+                    {/* Histogram */}
+                    { pointColors["type"] === "continuous" &&
+                        <Histogram data={getHistogramData(pointColors["values"])} xlabel={selectedPointColor} />
+                    }
                 </SettingsMenu>
                 <div className="fixed bottom-0 left-0 flex-wrap flex-row m-2 max-h-[90%] overflow-auto">
                     {
