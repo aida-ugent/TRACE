@@ -1,7 +1,7 @@
 import numpy as np
 from numba import jit, prange
 from numpy.random import default_rng
-
+import warnings
 
 # This stability measure is based on the paper "Dynamic visualization of
 # high-dimensional data" from Eric Sun et al. (2023)
@@ -25,9 +25,11 @@ def stability_across_embeddings(embeddings, num_samples=50, alpha=20):
             Values between 5 and 50 are typically sufficient. Defaults to 20.
     """
     if len(embeddings) < 5:
-        raise ValueError(
+        # warning instead of value error
+        warnings.warn(
             "We recommend at least five embeddings for stability calculation."
         )
+    
     if alpha < 0:
         raise ValueError("The alpha parameter must be greater than 0.")
 
