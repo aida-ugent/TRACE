@@ -29,7 +29,7 @@ class Dataset:
     def __init__(
         self,
         name: str,
-        hd_data: np.ndarray = None,
+        hd_data: np.ndarray | pd.DataFrame = None,
         adata: ad.AnnData = None,
         filepath: str = None,
         hd_data_key: str = "X",
@@ -44,7 +44,7 @@ class Dataset:
 
         Args:
             name (str): The name of the dataset.
-            hd_data (np.ndarray, optional): The high-dimensional data array. Defaults to None.
+            hd_data (np.ndarray | pd.DataFrame, optional): High-dimensional numerical data. Defaults to None.
             adata (ad.AnnData, optional): The AnnData object. Defaults to None.
             filepath (str, optional): The path to the h5ad file. Defaults to None.
             hd_data_key (str, optional): The key for the high-dimensional data array in adata.obsm or "X".
@@ -63,7 +63,13 @@ class Dataset:
         self.hd_annoy_filepath = dict()
 
         if hd_data is not None:
-            self.adata = ad.AnnData(X=np.asarray(hd_data))
+            if isinstance(hd_data, pd.DataFrame):
+                for col in hd_data.columns:
+                    if not pd.api.types.is_numeric_dtype(hd_data[col]):
+                        raise ValueError(
+                            f"Data column {col} is not numeric. Please provide non-numeric columns as metadata using 'add_metadata'."
+                        )
+            self.adata = ad.AnnData(X=hd_data)
         elif adata is not None:
             self.__load_anndata(adata, hd_data_key)
         elif filepath is not None:
@@ -237,7 +243,7 @@ class Dataset:
                 self.adata.uns[name]["quality"][new_name] = self.adata.uns[name][
                     "quality"
                 ].pop(old_name)
-                
+
     def remove_quality_feature(self, feature: str):
         """
         Remove a quality feature from the dataset.
@@ -346,7 +352,10 @@ class Dataset:
             return []
 
     def get_precomputed_neighbors_maxK(self):
-        if "hd_neighbors" in self.adata.uns.keys() and len(self.adata.uns["hd_neighbors"].keys()) > 0:
+        if (
+            "hd_neighbors" in self.adata.uns.keys()
+            and len(self.adata.uns["hd_neighbors"].keys()) > 0
+        ):
             return min([v.shape[1] for v in self.adata.uns["hd_neighbors"].values()])
         else:
             return 0
@@ -448,9 +457,11 @@ class Dataset:
         self.adata.uns["user_annotations"][selection_name] = points
         json.dump(self.adata.uns["user_annotations"], open(fname, "w"))
         # need to change the ownership of the file to the user (when running from docker)
-        os.chown(fname,
-                 os.stat(os.path.dirname(self.filepath)).st_uid, 
-                 os.stat(os.path.dirname(self.filepath)).st_gid)
+        os.chown(
+            fname,
+            os.stat(os.path.dirname(self.filepath)).st_uid,
+            os.stat(os.path.dirname(self.filepath)).st_gid,
+        )
         print("Wrote user annotations to ", fname)
 
     def get_category_colors(self, fname, categories: list):
@@ -470,9 +481,9 @@ class Dataset:
                 palette_size=len(categories), grid_size=32, colorblind_safe=True
             )
         return {"ticks": categories, "colors": list(colors)}
-    
+
     def get_continuous_colors(self, fname):
-        """ Retrieve colorscale for continuous feature if specified"""
+        """Retrieve colorscale for continuous feature if specified"""
         if fname + "_colors" in self.adata.uns_keys():
             return list(self.adata.uns[fname + "_colors"])
         else:
@@ -497,16 +508,18 @@ class Dataset:
     def compute_quality(self, filename: str = None, hd_metric=None):
         """
         Compute all quality measures for the dataset.
-        
+
         Args:
             filename (str, optional): The filename to save the dataset. Defaults to None.
-            hd_metric (str, optional): The metric to use for high-dimensional space. 
+            hd_metric (str, optional): The metric to use for high-dimensional space.
                 Defaults to None to use the metric specified in the dataset.
         """
         # this will take a while, the user should be updated
         self.verbose = True
         hd_metric = self.hd_metric if hd_metric is None else hd_metric
-        print(f"Quality measures for {self.name} using {hd_metric} distance in HD space...")
+        print(
+            f"Quality measures for {self.name} using {hd_metric} distance in HD space..."
+        )
         print(f"NUMBA uses {get_num_threads()} threads")
         start_time = time.time()
 
@@ -522,10 +535,14 @@ class Dataset:
             neighborhood_sizes = [num_samples]
 
         self.precompute_HD_neighbors(maxK=max(neighborhood_sizes), metric=hd_metric)
-        self.compute_neighborhood_preservation(neighborhood_sizes=neighborhood_sizes, hd_metric=hd_metric)
+        self.compute_neighborhood_preservation(
+            neighborhood_sizes=neighborhood_sizes, hd_metric=hd_metric
+        )
         self.compute_global_distance_correlation(hd_metric=hd_metric)
 
-        self.compute_random_triplet_accuracy(num_triplets=num_samples, hd_metric=hd_metric)
+        self.compute_random_triplet_accuracy(
+            num_triplets=num_samples, hd_metric=hd_metric
+        )
         self.compute_point_stability(num_samples=num_samples)
 
         self.align_embeddings(reference_embedding=self.get_embedding_names()[0])
@@ -743,7 +760,9 @@ class Dataset:
                 )
             else:
                 print(f"Sampling {num_samples} landmarks using random sampling.")
-                landmark_indices = default_rng().choice(self.adata.n_obs, size=num_samples, replace=False)
+                landmark_indices = default_rng().choice(
+                    self.adata.n_obs, size=num_samples, replace=False
+                )
             self.adata.uns["landmark_indices"] = landmark_indices
 
         hd_landmark_distances = centroid_correlation.compute_pairwise_distance(
@@ -786,9 +805,9 @@ class Dataset:
 
         if [closest_landmark_key] not in self.adata.uns_keys():
             # nearest neighbor index for HD data
-            hd_nbr_index = NearestNeighbors(n_neighbors=2, algorithm="auto", metric=hd_metric).fit(
-                self.get_HD_data()[self.adata.uns["landmark_indices"], :]
-            )
+            hd_nbr_index = NearestNeighbors(
+                n_neighbors=2, algorithm="auto", metric=hd_metric
+            ).fit(self.get_HD_data()[self.adata.uns["landmark_indices"], :])
             _, neighbors = hd_nbr_index.kneighbors(self.get_HD_data(), n_neighbors=1)
             neighbors = neighbors.flatten()
             # translate neighbor indices to landmark indices
@@ -839,17 +858,22 @@ class Dataset:
                 if key not in self.get_embedding_names():
                     raise ValueError(f"Embedding {key} not found.")
 
-        embeddings = [self.adata.obsm[key] for key in embedding_keys]
+        if len(embedding_keys) >= 5:
+            embeddings = [self.adata.obsm[key] for key in embedding_keys]
 
-        start_time = time.time()
-        stability = stability_across_embeddings(
-            embeddings=embeddings, num_samples=num_samples, alpha=alpha
-        )
-        if self.verbose:
-            print(f"Done ({time.time()-start_time:.2f}s).")
+            start_time = time.time()
+            stability = stability_across_embeddings(
+                embeddings=embeddings, num_samples=num_samples, alpha=alpha
+            )
+            if self.verbose:
+                print(f"Done ({time.time()-start_time:.2f}s).")
 
-        # add stability to metadata
-        self.add_metadata({"point stability": stability})
+            # add stability to metadata
+            self.add_metadata({"point stability": stability})
+        else:
+            print(
+                "Skipping stability computation. Less than five embeddings available."
+            )
 
     def delete_quality_scores(self, quality_scores: list[str]):
         """
