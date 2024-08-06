@@ -8,6 +8,8 @@ import { Tabs, Tab } from "./tabs";
 import Checkbox, { Radio } from "./checkbox";
 import { backend_url } from "./api";
 import { Tooltip } from 'react-tooltip';
+import { Histogram } from "./histogram";
+
 
 const showLandmarks = (scatterplot) => {
   fetch(`${backend_url}/backend/landmarkPoints/`)
@@ -132,6 +134,7 @@ export function SettingsMenu(props) {
     handlePointColorScaling,
     hoverNeighborsEnabled,
     setHoverNeighborsEnabled,
+    selectedPoints,
     exclus,
     children } = props
 
@@ -307,7 +310,18 @@ export function SettingsMenu(props) {
                     {/* </div> */}
                   </span>
                 </div>
+
+                {/* Histogram */}
+                {pointColors["type"] === "continuous" && pointColors["values"].length > 0 &&
+                  <Histogram
+                    featureValues={pointColors["values"]}
+                    xlabel={selectedPointColor}
+                    selectedPoints={selectedPoints}
+                    selectedGroupName="selected" />
+                }
+
               </Tab>
+
               <Tab label="Embedding Quality">
                 {/* Distance measures */}
                 <div className="flex flex-col items-left my-2 justify-between">

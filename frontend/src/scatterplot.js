@@ -10,7 +10,6 @@ import { ReactSelect, getPointSize } from "./utils"
 import GroupedSelect from "./groupedSelect"
 import { getHDNeighbors, backend_url } from "./api";
 import { saveAsPng } from './utils';
-import { Histogram } from "./histogram";
 
 
 let filteredPoints = [];
@@ -207,47 +206,6 @@ const fetchEmbedding = (embName, setBackendStatus = () => { }) => {
     })
 }
 
-const getHistogramData = (featureValues) => {
-    // split the feature values in two arrays, one with the selectedPoints and one with the rest
-    let selectedValues = [];
-    let unselectedValues = [];
-
-    if (scatterplot != null) {
-        const selectedPoints = scatterplot.get('selectedPoints');
-
-        selectedPoints.forEach((v) => {
-            selectedValues.push(featureValues[v]);
-        })
-
-        featureValues.forEach((v, i) => {
-            if (!selectedPoints.includes(i)) {
-                unselectedValues.push(v);
-            }
-        })
-
-        return [
-            {
-                name: "unselected",
-                values: unselectedValues,
-                color: "#989898",
-            },
-            {
-                name: "selected",
-                values: selectedValues,
-                color: "#800080",
-            },
-        ];
-    } else {
-        return [
-            {
-                name: "all",
-                values: featureValues,
-                color: "#989898",
-            },
-        ];
-    }
-}
-
 
 export default function Scatterplot() {
     const [isLoading, setIsLoading] = useState(true);
@@ -268,7 +226,7 @@ export default function Scatterplot() {
 
     // POINT COLOR
     const [pointColorOptions, setPointColorOptions] = useState(null);
-    const [selectedPointColor, setSelectedPointColor] = useState("initialPointColors");
+    const [selectedPointColor, setSelectedPointColor] = useState("none");
     const [pointColors, setPointColors] = useState(
         {
             "values": 0,
@@ -279,6 +237,7 @@ export default function Scatterplot() {
     );
     const [colorMap, setColorMap] = useState({ "ticks": ["none"], "colors": ["#444444"] });
 
+    const [selectedPoints, setSelectedPoints] = useState([]);
     const [pointSize, setPointSize] = useState(5);
     const [opacities, setOpacities] = useState(null);
     const [scatterLoaded, setScatterLoaded] = useState(false);
@@ -492,6 +451,11 @@ export default function Scatterplot() {
         scatterplot.set({ opacityBy: 'density' });
     }
 
+    const subscribePointSelection = () => {
+        scatterplot.subscribe('select', (points) => setSelectedPoints(points["points"]));
+        scatterplot.subscribe('deselect', () => setSelectedPoints([]));
+    }
+
     const subscribeNeighborHover = () => {
         clearTimeout(timeOutHover);
         if (hoverNeighborsEnabled) {
@@ -626,6 +590,7 @@ export default function Scatterplot() {
                 useTransition: false,
                 preventFilterReset: false
             });
+            subscribePointSelection();
             scatterplot.deselect();
             resetOpacityHandler();
         }
@@ -735,6 +700,7 @@ export default function Scatterplot() {
                     handlePointColorScaling={handlePointColorScaling}
                     hoverNeighborsEnabled={hoverNeighborsEnabled}
                     setHoverNeighborsEnabled={setHoverNeighborsEnabled}
+                    selectedPoints={selectedPoints}
                     exclus={exclus}
                 >
                     {/* Dataset */}
@@ -746,11 +712,6 @@ export default function Scatterplot() {
                             onChange={handleDatasetSelect}
                         />
                     </div>
-
-                    {/* Histogram */}
-                    { pointColors["type"] === "continuous" &&
-                        <Histogram data={getHistogramData(pointColors["values"])} xlabel={selectedPointColor} />
-                    }
                 </SettingsMenu>
                 <div className="fixed bottom-0 left-0 flex-wrap flex-row m-2 max-h-[90%] overflow-auto">
                     {
