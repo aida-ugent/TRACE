@@ -225,7 +225,7 @@ export default function Scatterplot() {
 
     // POINT COLOR
     const [pointColorOptions, setPointColorOptions] = useState(null);
-    const [selectedPointColor, setSelectedPointColor] = useState("initialPointColors");
+    const [selectedPointColor, setSelectedPointColor] = useState("none");
     const [pointColors, setPointColors] = useState(
         {
             "values": 0,
@@ -236,6 +236,7 @@ export default function Scatterplot() {
     );
     const [colorMap, setColorMap] = useState({ "ticks": ["none"], "colors": ["#444444"] });
 
+    const [selectedPoints, setSelectedPoints] = useState([]);
     const [pointSize, setPointSize] = useState(5);
     const [opacities, setOpacities] = useState(null);
     const [scatterLoaded, setScatterLoaded] = useState(false);
@@ -440,6 +441,11 @@ export default function Scatterplot() {
                 }), activeEmbedding["x"].length > 100000 ? 100 : 30);
     };
 
+    const subscribePointSelection = () => {
+        scatterplot.subscribe('select', (points) => setSelectedPoints(points["points"]));
+        scatterplot.subscribe('deselect', () => setSelectedPoints([]));
+    }
+
     const handlePointOut = () => {
         clearTimeout(timeOutHover);
         scatterplot.set({ opacityBy: 'density' });
@@ -579,6 +585,7 @@ export default function Scatterplot() {
                 useTransition: false,
                 preventFilterReset: false
             });
+            subscribePointSelection();
             scatterplot.deselect();
             resetOpacityHandler();
         }
@@ -688,6 +695,7 @@ export default function Scatterplot() {
                     handlePointColorScaling={handlePointColorScaling}
                     hoverNeighborsEnabled={hoverNeighborsEnabled}
                     setHoverNeighborsEnabled={setHoverNeighborsEnabled}
+                    selectedPoints={selectedPoints}
                 >
                     {/* Dataset */}
                     <div className="flex flex-col items-left my-2 justify-between">
