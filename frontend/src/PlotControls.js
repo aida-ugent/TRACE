@@ -9,6 +9,7 @@ import Checkbox, { Radio } from "./checkbox";
 import { backend_url } from "./api";
 import { Tooltip } from 'react-tooltip';
 import { Histogram } from "./histogram";
+import { StackedBarplot } from "./barplot";
 
 const showLandmarks = (scatterplot) => {
   fetch(`${backend_url}/backend/landmarkPoints/`)
@@ -316,6 +317,16 @@ export function SettingsMenu(props) {
                     xlabel={selectedPointColor}
                     selectedPoints={selectedPoints}
                     selectedGroupName="selected" />
+                }
+
+                {/* Barplot */}
+                {pointColors["type"] === "categorical" && pointColors["values"].length > 0 &&
+                  <StackedBarplot
+                    featureValues={pointColors["values"]}
+                    xlabel={selectedPointColor}
+                    selectedPoints={selectedPoints}
+                    selectedGroupName="selected"
+                    colorMap={colorMap} />
                 }
               </Tab>
               <Tab label="Embedding Quality">
