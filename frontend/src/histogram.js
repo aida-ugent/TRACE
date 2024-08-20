@@ -239,8 +239,8 @@ export const Histogram = ({ featureValues, xlabel, selectedPoints, selectedGroup
     return (
         <div className="flex flex-wrap items-center my-2 text-sm">
             <div className="flex flex-row w-full justify-end">
-                {groupBuckets.map(group => {
-                    return <div className="flex flex-row items-center">
+                {groupBuckets.map((group, i) => {
+                    return <div key={i} className="flex flex-row items-center">
                         <svg width={12} height={12}><rect x={0} y={0} width={12} height={12} fill={colorScale(group.name)} /></svg>
                         <p className="text-sm ml-1 mr-4">{group.name}</p>
                     </div>;
