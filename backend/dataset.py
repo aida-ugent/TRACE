@@ -33,7 +33,7 @@ class Dataset:
         adata: ad.AnnData = None,
         filepath: str = None,
         hd_data_key: str = "X",
-        hd_metric: str = None,
+        hd_metric: str = "euclidean",
         description: str = None,
         verbose: bool = False,
         n_jobs: int = 8,
@@ -189,7 +189,7 @@ class Dataset:
         else:
             self.adata.uns["methods"][category] = [name]
 
-        self.adata.obsm[name] = utils.normalizeEmbedding(embedding)
+        self.adata.obsm[name] = utils.normalizeEmbedding(np.asarray(embedding))
 
         if meta_info is not None:
             # check if quality scores are point-wise
