@@ -33,7 +33,7 @@ class Dataset:
         adata: ad.AnnData = None,
         filepath: str = None,
         hd_data_key: str = "X",
-        hd_metric: str = "euclidean",
+        hd_metric: str = None,
         description: str = None,
         verbose: bool = False,
         n_jobs: int = 8,
@@ -158,6 +158,12 @@ class Dataset:
 
         if self.hd_metric is None and len(self.adata.uns["hd_neighbors"].keys()) > 0:
             self.hd_metric = list(self.adata.uns["hd_neighbors"].keys())[0]
+
+        if self.hd_metric is None:
+            if len(self.adata.uns["hd_neighbors"].keys()) > 0:
+                self.hd_metric = list(self.adata.uns["hd_neighbors"].keys())[0]
+            else:
+                self.hd_metric = "euclidean"
 
     def add_embedding(
         self,
