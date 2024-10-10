@@ -121,11 +121,49 @@ export const DodgedBarplot = ({
     const boundsWidth = width - MARGIN.right - MARGIN.left;
     const boundsHeight = height - MARGIN.top - MARGIN.bottom;
 
-    const data = getDodgedBarplotData(featureValues, selectedPoints, selectedGroupName);
-    const categories = colorMap["ticks"];
-    const groups = Object.keys(data);
+    const data = useMemo(() => {
+        return getDodgedBarplotData(featureValues, selectedPoints, selectedGroupName);
+    }, [featureValues, selectedPoints, selectedGroupName]);
 
-    var max_y_value = Math.max(Math.max(...Object.values(data[selectedGroupName])), Math.max(...Object.values(data["other"])));
+    // transform categories to strings
+    var categories = JSON.parse(JSON.stringify(colorMap["ticks"]));
+    categories = categories.map((c) => String(c));
+
+    var colors = JSON.parse(JSON.stringify(colorMap["colors"]));
+    var category_colors = Object.fromEntries(categories.map((c, i) => [c, colors[i]]));
+    var categories_not_shown = [];
+
+    const groups = Object.keys(data);
+    // check if there are too many categories to show
+    if (categories.length > 10) {
+        // if no selection is made, show the first 10 categories
+        if (selectedPoints.length == 0) {
+            categories = categories.slice(0, 10);
+            colors = Object.values(category_colors).slice(0, 10);
+            categories_not_shown = JSON.parse(JSON.stringify(colorMap["ticks"])).slice(10, colorMap["ticks"].length);
+        } else {
+            categories.sort((a, b) => {
+                if (data[selectedGroupName][a] == data[selectedGroupName][b]) {
+                    return data["other"][b] - data["other"][a];
+                } else {
+                    return data[selectedGroupName][b] - data[selectedGroupName][a];
+                }
+            });
+            categories = categories.slice(0, 10);
+            colors = categories.map((category) => category_colors[category]);
+            categories_not_shown = JSON.parse(JSON.stringify(colorMap["ticks"])).slice(10, colorMap["ticks"].length);
+        }
+    }
+
+    // Shorten the category names if they are too long
+    const ticklabel_length = Math.ceil(30 / categories.length);
+    var category_short_names = Object.fromEntries(categories.map(c =>
+        [c, c.length <= ticklabel_length ? c : c.substring(0, ticklabel_length) + "."]));
+
+    var max_y_value = 0
+    categories.forEach((category) => {
+        max_y_value = Math.max(max_y_value, Math.max(data[selectedGroupName][category], data["other"][category]));
+    });
     max_y_value = Math.ceil(max_y_value * 10) / 10;
 
     // Y axis
@@ -149,12 +187,15 @@ export const DodgedBarplot = ({
     var colorScale = d3
         .scaleOrdinal()
         .domain(categories)
-        .range(colorMap["colors"]);
+        .range(colors);
 
     useEffect(() => {
         const svgElement = d3.select(axesRef.current);
         svgElement.selectAll("*").remove();
-        const xAxisGenerator = d3.axisBottom(xScale);
+        const xAxisGenerator = d3.axisBottom(xScale)
+            .tickFormat((t, i) => {
+                return category_short_names[t];
+            });
         svgElement
             .append("g")
             .attr("transform", "translate(0," + boundsHeight + ")")
@@ -170,7 +211,22 @@ export const DodgedBarplot = ({
             .attr("y", boundsHeight + 40)
             .attr("x", boundsWidth / 2)
             .style("text-anchor", "middle")
-            .text(xlabel);
+            .text(categories_not_shown.length > 1 ?
+                xlabel + ` (${categories_not_shown.length} categories not shown)`
+                : categories_not_shown.length > 0 ?
+                    xlabel + ` (${categories_not_shown[0]} not shown)`
+                    : xlabel);
+
+
+        // Add the text label for the Y axis
+        svgElement.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - MARGIN.left)
+            .attr("x", 0 - boundsHeight / 2)
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text("relative frequency");
+
     }, [xScale, yScale, boundsHeight]);
 
     const barwidth = 10 / 21 * xScale.bandwidth();

@@ -91,10 +91,9 @@ export const Histogram = ({ featureValues, xlabel, selectedPoints, selectedGroup
         .range(allGroupColors);
 
     const xScale = useMemo(() => {
-        const maxPerGroup = data.map((group) => Math.max(...group.values));
-        const minPerGroup = data.map((group) => Math.min(...group.values));
-        const max = Math.max(...maxPerGroup);
-        const min = Math.min(...minPerGroup);
+        const allValues = data.map((group) => group.values).flat();
+        const max = allValues.reduce((a,b)=>a > b ? a : b);
+        const min = allValues.reduce((a,b)=>a < b ? a : b);
         return d3.scaleLinear().domain([min, max]).range([10, boundsWidth]).nice();
     }, [data, width]);
 
@@ -114,12 +113,8 @@ export const Histogram = ({ featureValues, xlabel, selectedPoints, selectedGroup
     }, [data]);
 
     const yScale = useMemo(() => {
-        const max = Math.max(
-            ...groupBuckets.map((group) => {
-                return Math.max(...group.buckets.map((bucket) => (bucket?.length) / group.size));
-            }
-            )
-        );
+        const groupSizes = groupBuckets.map((group) => group.buckets.map((bucket) => (bucket?.length) / group.size).reduce((a,b)=>a > b ? a : b));
+        const max = groupSizes.reduce((a,b)=>a > b ? a : b);
         return d3.scaleLinear().range([boundsHeight, 0]).domain([0, max]).nice(10);
     }, [data, height]);
 

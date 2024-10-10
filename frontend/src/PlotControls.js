@@ -320,23 +320,10 @@ export function SettingsMenu(props) {
                     selectedGroupName="selected" />
                 }
 
-                {/* Stacked Barplot */}
-                {/* {pointColors["type"] === "categorical" &&
-                  pointColors["values"].length > 0 &&
-                  colorMap["colors"].lenth < 3 &&
-                  <StackedBarplot
-                    featureValues={pointColors["values"]}
-                    xlabel={selectedPointColor}
-                    selectedPoints={selectedPoints}
-                    selectedGroupName="selected"
-                    colorMap={colorMap} />
-                } */}
-
                 {/* Dodged Barplot */}
                 {pointColors["type"] === "categorical" &&
                   pointColors["values"].length > 0 &&
                   colorMap["colors"].length > 1 &&
-                  colorMap["colors"].length <= 10 &&
                   <DodgedBarplot
                     featureValues={pointColors["values"]}
                     xlabel={selectedPointColor}
