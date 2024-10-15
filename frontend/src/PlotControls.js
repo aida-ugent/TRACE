@@ -9,6 +9,7 @@ import Checkbox, { Radio } from "./checkbox";
 import { backend_url } from "./api";
 import { Tooltip } from 'react-tooltip';
 import { Histogram } from "./histogram";
+import { DodgedBarplot, StackedBarplot } from "./barplot";
 
 const showLandmarks = (scatterplot) => {
   fetch(`${backend_url}/backend/landmarkPoints/`)
@@ -22,6 +23,7 @@ const showLandmarks = (scatterplot) => {
       }
     })
 }
+
 
 const showIntrusions = (scatterplot, kNeighbors, metric) => {
   let selectedPoints = scatterplot.get('selectedPoints')
@@ -318,6 +320,19 @@ export function SettingsMenu(props) {
                     selectedPoints={selectedPoints}
                     selectedGroupName="selected" />
                 }
+
+                {/* Dodged Barplot */}
+                {pointColors["type"] === "categorical" &&
+                  pointColors["values"].length > 0 &&
+                  colorMap["colors"].length > 1 &&
+                  <DodgedBarplot
+                    featureValues={pointColors["values"]}
+                    xlabel={selectedPointColor}
+                    selectedPoints={selectedPoints}
+                    selectedGroupName="selected"
+                    colorMap={colorMap} />
+                }
+
               </Tab>
               <Tab label="Embedding Quality">
                 {/* Distance measures */}
