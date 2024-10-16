@@ -506,21 +506,22 @@ class Dataset:
                 )
                 # make sure the embedding is still normalized
                 self.adata.obsm[name] = utils.normalizeEmbedding(self.adata.obsm[name])
-      
+
     #############################
     ## ExClus Clustering       ##
     #############################
-                
+
     def get_exclus_results(self):
         if "ExClus" in self.adata.uns_keys():
             features = []
             for c in self.adata.uns["ExClus"].keys():
                 if "cluster" in c:
-                    features.append([c, self.adata.uns["ExClus"][c]["attributes"].tolist()])
+                    features.append(
+                        [c, self.adata.uns["ExClus"][c]["attributes"].tolist()]
+                    )
             return features
         else:
             return None
-
 
     #############################
     ## Quality Score Functions ##
@@ -956,3 +957,32 @@ class Dataset:
                     )
         if self.verbose:
             print(f"Done ({time.time()-start_time:.2f}s).")
+
+    #############################
+    ## Explaining Clusters     ##
+    #############################
+    def explain_cluster(
+        self, indices: np.ndarray, method="histogram", n_features: int = 10
+    ):
+        import explanation.histogram_intersection as hist_int
+
+        print(f"self.adata.X: {type(self.adata.X).__name__}")
+        print(f"self.adata.X[()]: {type(self.adata.X[()]).__name__}")
+        print(f"np.asarray(self.adata.X): {type(np.asarray(self.adata.X)).__name__}")
+
+        # if not isinstance(self.adata.X, np.ndarray):
+        #    X = self.adata.X.toarray()
+
+        if type(self.adata.X).__name__ == "csr_matrix":
+            hist_intersections = hist_int.get_histogram_intersection(
+                self.adata.X.toarray(),
+                np.asarray(indices),
+            )
+
+        else:
+            hist_intersections = hist_int.get_histogram_intersection(
+                self.adata.X[()],
+                np.asarray(indices),
+            )
+
+        return self.adata.var_names[np.argsort(hist_intersections)[0:n_features]]

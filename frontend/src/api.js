@@ -35,3 +35,35 @@ export function getHDNeighbors(selectedPoints, kNeighbors, metric) {
         }
     })
 }
+
+
+export function explainCluster(selectedPoints) {
+    return new Promise((resolve, reject) => {
+        if (selectedPoints.length > 0) {
+            fetch(`${backend_url}/backend/explainCluster`, {
+                method: "POST",
+                body: JSON.stringify({
+                    points: selectedPoints,
+                    selection_name: "explanation",
+                }),
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8"
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        console.log(`/backend/explainCluster got HTTP error: Status ${response.status}, Text ${response.statusText}`);
+                        resolve(response);
+                    } else {
+                        response.json().then(data => {
+                            console.log(JSON.stringify(data["result"]));
+                            resolve(data["result"]);
+                        })
+                    }
+                })
+            }
+        else {
+            resolve([]);
+        }
+    })
+}

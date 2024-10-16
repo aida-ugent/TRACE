@@ -460,6 +460,12 @@ async def getUnstablePoints(
         return {"result": []}
 
 
+@app.post("/backend/explainCluster")
+async def explainCluster(item: PointSelection = Body(...)):
+    indices = item.points
+    return {"result": list(dataset.explain_cluster(indices))}
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=API_PORT)
