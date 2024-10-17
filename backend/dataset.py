@@ -15,6 +15,7 @@ from alignment import umeyama_alignment
 import evaluation.triplet_accuracy as triplet_accuracy
 from evaluation.stability import stability_across_embeddings
 from collections.abc import Mapping
+import explanation.feature_importance as feature_importance
 
 
 class Dataset:
@@ -961,28 +962,148 @@ class Dataset:
     #############################
     ## Explaining Clusters     ##
     #############################
+    def get_differentiating_features(
+        self,
+        selectionA: np.ndarray,
+        selectionB: np.ndarray,
+        method="wasserstein",
+        n_features: int = 10,
+    ):
+        """Compute features that are maximally different between two selections of points.
+        The selections should be subsampled before if the number of points is too large.
+
+        Args:
+            selectionA (np.ndarray): Indices of the first selection of points.
+            selectionB (np.ndarray): Indices of the second selection of points.
+            method (str, optional): Method to compute histogram difference. Defaults to "wasserstein".
+            n_features (int, optional): Defaults to 10.
+        """
+        try:
+            if (
+                type(self.adata.X).__name__ == "csr_matrix"
+                or type(self.adata.X).__name__ == "SparseDataset"
+            ):
+                feature_list, importance = feature_importance.get_feature_importance(
+                    A=self.adata.X[selectionA, :].toarray(),
+                    B=self.adata.X[selectionB, :].toarray(),
+                    method=method,
+                )
+            else:
+                feature_list, importance = feature_importance.get_feature_importance(
+                    A=self.adata.X[selectionA, :],
+                    B=self.adata.X[selectionB, :],
+                    method=method,
+                )
+        except Exception as e:
+            print(f"get_differentiating_features error: {e}")
+            return []
+
+        features = self.adata.var_names[feature_list[0:n_features]].values
+        return features
+
     def explain_cluster(
         self, indices: np.ndarray, method="histogram", n_features: int = 10
     ):
-        import explanation.histogram_intersection as hist_int
 
-        print(f"self.adata.X: {type(self.adata.X).__name__}")
-        print(f"self.adata.X[()]: {type(self.adata.X[()]).__name__}")
-        print(f"np.asarray(self.adata.X): {type(np.asarray(self.adata.X)).__name__}")
+        selected_mask = np.zeros(self.adata.X.shape[0], dtype=bool)
+        selected_mask[np.asarray(indices)] = True
+        other_indices = np.arange(self.adata.X.shape[0])[~selected_mask]
+        selected_indices = np.arange(self.adata.X.shape[0])[selected_mask]
 
-        # if not isinstance(self.adata.X, np.ndarray):
-        #    X = self.adata.X.toarray()
+        max_size = 50000000
+        if self.adata.X.shape[0] * self.adata.X.shape[1] > max_size:
+            max_points = int(max_size / self.adata.X.shape[1])
+            take_indices = default_rng().choice(
+                other_indices.shape[0], max_points, replace=False
+            )
+            take_mask = np.zeros(other_indices.shape[0], dtype=bool)
+            take_mask[take_indices] = True
+            other_indices = other_indices[take_mask]
+            print(
+                f"Histogram intersection: reducing the number of (background) points to {max_points}."
+            )
+            if selected_indices.shape[0] * self.adata.X.shape[1] > max_size:
+                max_points = int(max_size / self.adata.X.shape[1])
+                take_indices = default_rng().choice(
+                    selected_indices.shape[0], max_points, replace=False
+                )
+                take_mask = np.zeros(selected_indices.shape[0], dtype=bool)
+                take_mask[take_indices] = True
+                selected_indices = selected_indices[take_mask]
+                print(
+                    f"Histogram intersection: reducing the number of (selection) points to {max_points}."
+                )
+        return self.get_differentiating_features(
+            selectionA=selected_indices, selectionB=other_indices, method=method
+        )
 
-        if type(self.adata.X).__name__ == "csr_matrix":
-            hist_intersections = hist_int.get_histogram_intersection(
-                self.adata.X.toarray(),
-                np.asarray(indices),
+    def compareClusters(
+        self,
+        selectionA: np.ndarray,
+        selectionB: np.ndarray,
+        method="wasserstein",
+        n_features: int = 10,
+    ):
+        """
+        Compare two selections of points.
+
+        Args:
+            selectionA (np.ndarray): The indices of the first selection.
+            selectionB (np.ndarray): The indices of the second selection.
+        """
+        # clean up the selection: points that are in A and B only remain in B
+        # find indices that are in both selections
+        selectionA = np.asarray(selectionA)
+        selectionB = np.asarray(selectionB)
+
+        n, d = self.adata.X.shape
+
+        inAmask = np.zeros(n, dtype=bool)
+        inAmask[selectionA] = True
+        inBmask = np.zeros(n, dtype=bool)
+        inBmask[selectionB] = True
+        inAmask[inBmask] = False
+        selectionA = np.arange(n)[inAmask]
+        selectionB = np.arange(n)[inBmask]
+
+        max_size = 50000000
+        if (selectionA.shape[0] + selectionB.shape[0]) * d > max_size:
+            max_points = int(max_size / self.adata.X.shape[1])
+
+            # what fraction of the points should be taken from each selection
+            fracA = selectionA.shape[0] / (selectionA.shape[0] + selectionB.shape[0])
+            fracB = selectionB.shape[0] / (selectionA.shape[0] + selectionB.shape[0])
+
+            take_A = default_rng().choice(
+                selectionA.shape[0], int(fracA * max_points), replace=False
+            )
+            selectionA = selectionA[take_A]
+            take_B = default_rng().choice(
+                selectionB.shape[0], int(fracB * max_points), replace=False
+            )
+            selectionB = selectionB[take_B]
+            print(
+                f"Comparing selections: reducing the number of points to {max_points}."
             )
 
+        return self.get_differentiating_features(
+            selectionA=selectionA,
+            selectionB=selectionB,
+            method="wasserstein",
+            n_features=n_features,
+        )
+
+    def subsample_indices(indices, n, n_samples):
+        """Subsample indices and sort them."""
+        indices = np.asarray(indices)
+        take_mask = np.zeros(n, dtype=bool)
+
+        if n_samples >= n or n_samples > indices.shape[0]:
+            take_mask[indices] = True
         else:
-            hist_intersections = hist_int.get_histogram_intersection(
-                self.adata.X[()],
-                np.asarray(indices),
+            take_indices = default_rng().choice(
+                indices.shape[0], n_samples, replace=False
             )
+            take_mask[take_indices] = True
 
-        return self.adata.var_names[np.argsort(hist_intersections)[0:n_features]]
+        return np.arange(n)[take_mask]

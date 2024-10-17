@@ -31,8 +31,9 @@ const Tabs = ({ children }) => {
                 {children.map(child => {
                     if (child.props.label === activeTab) {
                         return <div key={child.props.label}>{child.props.children}</div>;
+                    } else {
+                        return <div key={child.props.label} className='hidden'>{child.props.children}</div>
                     }
-                    return null;
                 })}
             </div>
         </>

@@ -54,6 +54,11 @@ class PointSelection(BaseModel):
     selection_name: str
 
 
+class clusterSelection(BaseModel):
+    selectionA: List[int]
+    selectionB: List[int]
+
+
 class FeatureList(BaseModel):
     feature_list: List[str]
 
@@ -216,7 +221,7 @@ async def getPointColors(
     scale_continuous = True
     range = None
     fgroup = None
-    categorical_dtypes = ['object', 'category', 'bool']
+    categorical_dtypes = ["object", "category", "bool"]
 
     if fname == "HD distances" and (selectedPoint is not None and hdMetric is not None):
         # compute HD distances for selected point
@@ -230,12 +235,9 @@ async def getPointColors(
         fvalues = dataset.adata.obs[fname]
         fgroup = "metadata"
 
-        if (
-            dataset.adata.obs[fname].dtype.name in categorical_dtypes
-            or (
-                "int" in dataset.adata.obs[fname].dtype.name
-                and len(dataset.adata.obs[fname].unique() < 15)
-            )
+        if dataset.adata.obs[fname].dtype.name in categorical_dtypes or (
+            "int" in dataset.adata.obs[fname].dtype.name
+            and len(dataset.adata.obs[fname].unique() < 15)
         ):
             ftype = "categorical"
             value_counts = list(fvalues.value_counts(ascending=False, sort=True).keys())
@@ -463,7 +465,13 @@ async def getUnstablePoints(
 @app.post("/backend/explainCluster")
 async def explainCluster(item: PointSelection = Body(...)):
     indices = item.points
-    return {"result": list(dataset.explain_cluster(indices))}
+    method = item.selection_name
+    return {"result": list(dataset.explain_cluster(indices, method=method))}
+
+
+@app.post("/backend/compareClusters")
+async def compareClusters(item: clusterSelection = Body(...)):
+    return {"result": list(dataset.compareClusters(item.selectionA, item.selectionB))}
 
 
 if __name__ == "__main__":

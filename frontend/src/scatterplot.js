@@ -344,6 +344,10 @@ export default function Scatterplot() {
                                 setMetric(res["hd_metric"]);
                                 setMetricOptions(res["metric_options"].map(v => { return { value: v, label: v } }));
                                 setMaxNeighbors(res["max_neighbors"]);
+                                if (kNeighbors > res["max_neighbors"]) {
+                                    setkNeighbors(res["max_neighbors"]);
+                                }
+                                setHoverNeighborsEnabled(false);
                                 setDatasetInfo(res["dataset_info"]);
                                 setDatasetName(res["dataset_name"]);
                                 setEmbeddingOptions(res["embedding_options"])

@@ -11,6 +11,7 @@ import { Tooltip } from 'react-tooltip';
 import { Histogram } from "./histogram";
 import { DodgedBarplot, StackedBarplot } from "./barplot";
 import { explainCluster } from "./api";
+import { Explanation } from "./explanation";
 
 const showLandmarks = (scatterplot) => {
   fetch(`${backend_url}/backend/landmarkPoints/`)
@@ -439,26 +440,13 @@ export function SettingsMenu(props) {
                 <SavePointForm scatterplot={scatterplot} />
               </Tab>
 
-              <Tab label="ExClus">
-                {exclus != null && <h4 className="text-md font-large leading-6 text-gray-900 w-fit mt-3" >Interesting features for ExClus clusters</h4>}
-                {exclus == null && <h4 className="text-md font-large leading-6 text-gray-900 w-fit mt-3" >No ExClus clusters found</h4>}
-                <div className="flex flex-col items-left my-2 justify-between select-text">
-                  {exclus != null && exclus.map(element => {
-                    return <><p className="text-md  font-bold text-gray-900 text-left my-2">{element[0]}</p>
-                      <p className="text-sm text-gray-900 text-left my-2 inline align-left">
-                        {
-                          element[1].map(subelement => {
-                            return <>{subelement}, </>
-                          })
-                        }</p></>
-                  })}
-                </div>
-
-                <div className='flex flex-wrap items-center mb-2 justify-left'>
-                  <DefaultButton onClick={() => explainCluster(selectedPoints)}>
-                    Explain Cluster
-                  </DefaultButton>
-                </div>
+              <Tab label="Exploration">
+                <Explanation
+                  exclus={exclus}
+                  selectedPoints={selectedPoints}
+                  pointColorOnChange={pointColorOnChange}
+                  pointColorOptions={pointColorOptions} 
+                  scatterplot={scatterplot}/>
               </Tab>
 
             </Tabs>
