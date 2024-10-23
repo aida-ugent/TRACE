@@ -164,14 +164,16 @@ The processed dataset of gene expressions from [Guilliams et al.](https://pubmed
 
 
 ## Citation
-TRACE will be presented as a demo paper at ECML-PKDD 2024. If you find the tool useful and are using it in your research, we'd appreciate if you could cite our paper:
+TRACE was presented as a [demo paper](https://link.springer.com/chapter/10.1007/978-3-031-70371-3_24) at ECML-PKDD 2024. If you find the tool useful and are using it in your research, we'd appreciate if you could cite our paper:
 
 ```bibtex
-@unpublished{heiter2024pattern,
-    title={Pattern or Artifact? Interactively Exploring Embedding Quality with TRACE},
-    author={Edith Heiter and Liesbet Martens and Ruth Seurinck and Martin Guilliams and Tijl De Bie and Yvan Saeys and Jefrey Lijffijt},
-    year={2024},
-    note={arXiv:2406.12953}
+@inproceedings{heiter2024pattern,
+  title={Pattern or Artifact? Interactively Exploring Embedding Quality with TRACE},
+  author={Heiter, Edith and Martens, Liesbet and Seurinck, Ruth and Guilliams, Martin and De Bie, Tijl and Saeys, Yvan and Lijffijt, Jefrey},
+  booktitle={Joint European Conference on Machine Learning and Knowledge Discovery in Databases},
+  pages={379--382},
+  year={2024},
+  organization={Springer}
 }
 ```
 
