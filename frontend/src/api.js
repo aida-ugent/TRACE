@@ -56,7 +56,7 @@ export function explainCluster(selectedPoints, explainabilityMethod) {
                         resolve([]);
                     } else {
                         response.json().then(data => {
-                            resolve(data["result"]);
+                            resolve(data);
                         })
                     }
                 })
@@ -86,7 +86,7 @@ export function compareClusters(selectionA, selectionB) {
                         resolve([]);
                     } else {
                         response.json().then(data => {
-                            resolve(data["result"]);
+                            resolve(data);
                         })
                     }
                 })

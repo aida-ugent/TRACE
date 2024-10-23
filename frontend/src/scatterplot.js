@@ -680,6 +680,24 @@ export default function Scatterplot() {
                     </div>
                     <SelectionInfo scatterplot={scatterplotState} numPoints={numPoints} datasetInfo={datasetInfo} />
                 </div>
+                <div className="fixed bottom-0 left-0 flex-wrap flex-row m-2 max-h-[90%] overflow-auto">
+                    {
+                        pointColors["type"] === "categorical" ?
+                            <Legend
+                                colormap={colorMap}
+                                title={selectedPointColor}
+                                filter={(filterValue) => filterPoints(pointColors["values"], filterValue)}
+                                unfilter={(filterValue) => unfilterPoints(pointColors["values"], filterValue)}
+                                visibility={legendVisibility}
+                            /> :
+                            <Colorbar
+                                colormap={colorMap}
+                                title={selectedPointColor}
+                                visibility={legendVisibility}
+                                zoomColorbar={zoomColorbar}
+                            />
+                    }
+                </div>
                 <SettingsMenu
                     scatterplot={scatterplotState}
                     selectedPointColor={selectedPointColor}
@@ -717,26 +735,6 @@ export default function Scatterplot() {
                     </div>
 
                 </SettingsMenu>
-                <div className="fixed bottom-0 left-0 flex-wrap flex-row m-2 max-h-[90%] overflow-auto">
-                    {
-                        pointColors["type"] === "categorical" ?
-                            <Legend
-                                colormap={colorMap}
-                                title={selectedPointColor}
-                                filter={(filterValue) => filterPoints(pointColors["values"], filterValue)}
-                                unfilter={(filterValue) => unfilterPoints(pointColors["values"], filterValue)}
-                                visibility={legendVisibility}
-                            /> :
-                            <Colorbar
-                                colormap={colorMap}
-                                title={selectedPointColor}
-                                visibility={legendVisibility}
-                                zoomColorbar={zoomColorbar}
-                            />
-                    }
-                </div>
-
-
                 <div
                     //visibility={isLoadingData ? "visible" : "hidden"}
                     role="status" className="absolute w-screen h-screen bg-white bg-opacity-75 flex justify-center items-center flex-col"

@@ -466,13 +466,17 @@ async def getUnstablePoints(
 async def explainCluster(item: PointSelection = Body(...)):
     indices = item.points
     method = item.selection_name
-    return {"result": list(dataset.explain_cluster(indices, method=method))}
+    features, higher_mean = dataset.explain_cluster(indices, method=method)
+    return {"features": features.tolist(),
+            "higher_mean": higher_mean.tolist()}
 
 
 @app.post("/backend/compareClusters")
 async def compareClusters(item: clusterSelection = Body(...)):
-    return {"result": list(dataset.compareClusters(item.selectionA, item.selectionB))}
-
+    features, higher_mean = dataset.compareClusters(item.selectionA, item.selectionB)
+    return {"features": features.tolist(),
+            "higher_mean": higher_mean.tolist()}
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

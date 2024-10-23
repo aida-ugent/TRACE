@@ -446,7 +446,8 @@ export function SettingsMenu(props) {
                   selectedPoints={selectedPoints}
                   pointColorOnChange={pointColorOnChange}
                   pointColorOptions={pointColorOptions} 
-                  scatterplot={scatterplot}/>
+                  scatterplot={scatterplot}
+                  selectedPointColor={selectedPointColor}/>
               </Tab>
 
             </Tabs>

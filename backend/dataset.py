@@ -978,28 +978,33 @@ class Dataset:
             method (str, optional): Method to compute histogram difference. Defaults to "wasserstein".
             n_features (int, optional): Defaults to 10.
         """
+        A_array, B_array = None, None
         try:
             if (
                 type(self.adata.X).__name__ == "csr_matrix"
                 or type(self.adata.X).__name__ == "SparseDataset"
             ):
-                feature_list, importance = feature_importance.get_feature_importance(
-                    A=self.adata.X[selectionA, :].toarray(),
-                    B=self.adata.X[selectionB, :].toarray(),
-                    method=method,
-                )
+                A_array = self.adata.X[selectionA, :].toarray()
+                B_array = self.adata.X[selectionB, :].toarray()
             else:
-                feature_list, importance = feature_importance.get_feature_importance(
-                    A=self.adata.X[selectionA, :],
-                    B=self.adata.X[selectionB, :],
-                    method=method,
-                )
+                A_array = self.adata.X[selectionA, :]
+                B_array = self.adata.X[selectionB, :]
+
+            feature_list, importance = feature_importance.get_feature_importance(
+                A=A_array,
+                B=B_array,
+                method=method,
+            )
+            mean_A = np.mean(A_array[:, feature_list[0:n_features]], axis=0)
+            mean_B = np.mean(B_array[:, feature_list[0:n_features]], axis=0)
+            A_larger = mean_A > mean_B
+
         except Exception as e:
             print(f"get_differentiating_features error: {e}")
             return []
 
         features = self.adata.var_names[feature_list[0:n_features]].values
-        return features
+        return (features, A_larger)
 
     def explain_cluster(
         self, indices: np.ndarray, method="histogram", n_features: int = 10
@@ -1034,7 +1039,10 @@ class Dataset:
                     f"Histogram intersection: reducing the number of (selection) points to {max_points}."
                 )
         return self.get_differentiating_features(
-            selectionA=selected_indices, selectionB=other_indices, method=method
+            selectionA=selected_indices,
+            selectionB=other_indices,
+            method=method,
+            n_features=n_features,
         )
 
     def compareClusters(
