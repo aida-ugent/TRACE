@@ -34,7 +34,7 @@ class Dataset:
         filepath: str = None,
         hd_data_key: str = "X",
         hd_metric: str = None,
-        description: str = None,
+        description: str = "",
         verbose: bool = False,
         n_jobs: int = 8,
         **kwargs,
@@ -227,7 +227,15 @@ class Dataset:
         if isinstance(metadata, pd.DataFrame):
             if len(metadata) != self.adata.n_obs:
                 raise ValueError(f"Metadata should have a value for each point.")
-            self.adata.obs = pd.concat([self.adata.obs, metadata], axis=1)
+            
+            if self.adata.obs.shape[1] == 0:
+                self.adata.obs = metadata
+            else:
+                if np.any(metadata.columns.isin(self.adata.obs.columns)):
+                    raise ValueError(
+                        "Metadata columns should not overlap with existing columns."
+                    )
+                self.adata.obs = pd.concat([self.adata.obs, metadata], axis=1)
         else:
             for key, value in metadata.items():
                 if len(value) != self.adata.n_obs:

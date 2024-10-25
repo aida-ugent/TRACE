@@ -22,7 +22,7 @@ dataset_configs = get_available_datasets("./data_configs.yaml")
 async def lifespan(app: FastAPI):
     global dataset
     print("Starting server")
-    dataset = Dataset(**dataset_configs[list(dataset_configs.keys())[0]])
+    dataset = Dataset(name="tmp", hd_data=np.zeros((1, 1)))
     yield
     if dataset is not None:
         dataset.cleanup()
@@ -82,12 +82,12 @@ def loadDataset(datasetName: str):
 
         if datasetName in dataset_configs.keys():
             try:
-                dataset = Dataset(**dataset_configs[datasetName])
+                dataset = Dataset(name=datasetName, **dataset_configs[datasetName])
                 print(f"Loaded dataset {datasetName}")
             except FileNotFoundError as e:
                 print(f"Error loading dataset {datasetName}: {e}")
                 print(f"Now loading GaussianLine")
-                dataset = Dataset(**dataset_configs["GaussLine"])
+                dataset = Dataset(name=datasetName, **dataset_configs["GaussLine"])
                 datasetName = "GaussLine"
         else:
             raise HTTPException(
@@ -215,7 +215,7 @@ async def getPointColors(
     scale_continuous = True
     range = None
     fgroup = None
-    categorical_dtypes = ['object', 'category', 'bool']
+    categorical_dtypes = ["object", "category", "bool"]
 
     if fname == "HD distances" and (selectedPoint is not None and hdMetric is not None):
         # compute HD distances for selected point
@@ -227,24 +227,33 @@ async def getPointColors(
     # metadata
     elif fname in dataset.adata.obs_keys():
         fvalues = dataset.adata.obs[fname]
+        fdtype = dataset.adata.obs[fname].dtype.name
         fgroup = "metadata"
 
-        if (
-            dataset.adata.obs[fname].dtype.name in categorical_dtypes
-            or (
-                "int" in dataset.adata.obs[fname].dtype.name
-                and len(dataset.adata.obs[fname].unique() < 15)
-            )
+        if fdtype in categorical_dtypes or (
+            "int" in fdtype and len(dataset.adata.obs[fname].unique()) < 50
         ):
             ftype = "categorical"
-            value_counts = list(fvalues.value_counts(ascending=False, sort=True).keys())
+            # do sorting by frequency only for categories
+            if fdtype in categorical_dtypes:
+                value_counts = list(
+                    fvalues.value_counts(ascending=False, sort=True).keys()
+                )
+            else:
+                value_counts = sorted(pd.unique(fvalues).tolist())
+            max_colors = 19
 
-            if len(value_counts) > 30:
-                encoded_fvalues = np.zeros((dataset.adata.n_obs,), dtype=int)
-                colorMap = {
-                    "ticks": [f"too many values ({len(value_counts)})"],
-                    "colors": ["#444444"],
-                }
+            if len(value_counts) > max_colors:
+                # show the first 20 categories in different colors, the rest as grey
+                other_cat_name = f"other ({len(value_counts) - max_colors})"
+                categories = value_counts[:max_colors] + [other_cat_name]
+                cat_dtype = CategoricalDtype(categories=categories)
+                fvalues = fvalues.astype(cat_dtype)
+                fvalues[~fvalues.isin(value_counts[:max_colors])] = other_cat_name
+                encoded_fvalues = pd.Series(fvalues.values.tolist()).astype(cat_dtype)
+                encoded_fvalues = encoded_fvalues.cat.codes
+                colorMap = dataset.get_category_colors(fname, categories=categories)
+                colorMap["colors"][-1] = "#777777"
             else:
                 cat_dtype = CategoricalDtype(categories=value_counts)
                 encoded_fvalues = pd.Series(fvalues.values.tolist()).astype(cat_dtype)
@@ -327,6 +336,7 @@ async def getPointColors(
                 encoded_fvalues = (fvalues - range[0]) / (range[1] - range[0])
         else:
             encoded_fvalues = fvalues
+
     res = {
         "values": fvalues.tolist(),
         "encoded_values": encoded_fvalues.tolist(),

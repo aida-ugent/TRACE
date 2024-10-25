@@ -1,39 +1,28 @@
 # Dataset configuration
 # - filepath (str): path to the h5ad file
-# - name (str): name of the dataset
-# - hd_metric (str): metric to use for the high-dimensional space
-#   supported distance for approximate nearest neighbors are ["angular", "euclidean", "manhattan", "hamming", "dot"]
-# - description (str): description of the dataset
-# - hd_data_key (str): key to access the high-dimensional data in adata.obsm (use "X" for adata.X)
-
+# - description (str, optional): description of the dataset
+# - hd_data_key (str, optional): key specifying the high-dimensional data to use in adata.obsm. As default, adata.X is used. 
+# - hd_metric (str, optional): metric to use to compute distances in the high-dimensional space
 
 GaussLine:
   description: "Gaussian clusters shifted along a line from B\xF6hm et al. (2022)"
   filepath: ../data/gauss_line/gauss_line.h5ad
-  hd_data_key: X
-  name: GaussLine
 Human Immune:
   description: Human Immune, Luecken et al. (2022)
   filepath: ../data/immune/immune.h5ad
   hd_data_key: X_pca
-  name: Human Immune
 Mammoth:
   description: Mammoth dataset from Wang et al. (2021)
   filepath: ../data/mammoth/mammoth.h5ad
-  hd_data_key: X
-  name: Mammoth
 Mouse CD45neg:
   description: Mouse cells, CD45neg (from Guilliams M. et al. 2022)
   filepath: ../data/mouse_fibro/Mouse_CD45neg.h5ad
   hd_data_key: X_totalVI
-  name: Mouse CD45neg
 Mouse Fibroblasts:
   description: Mouse cells, Fibroblasts subset (from Guilliams M. et al. 2022)
   filepath: ../data/mouse_fibro/Fibroblasts.h5ad
   hd_data_key: X_totalVI
-  name: Mouse Fibroblasts
 Fly Atlas:
-  name: Fly Atlas
-  filepath: ../data/fly_atlas/fly_atlas_tsne.h5ad
   description: Hongjie Li et al., Fly Cell Atlas, A single-nucleus transcriptomic atlas of the adult fruit fly.
+  filepath: ../data/fly_atlas/fly_atlas_tsne.h5ad
   hd_data_key: X_pca

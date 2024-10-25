@@ -12,17 +12,9 @@ manuscript/
 # python envs
 backend/*_env/*
 
-# large data files
-data/**/*.h5ad
-data/**/*.json
-data/**/*.csv
-data/**/*.pkl
-data/**/*.zip
-data/**/*.loom
-data/**/*.txt
-data/**/*.rds
-data/**/*.tsv
-**/*.ann
+# data files
+data/*
+backend/data_configs.yaml
 
 # dependencies
 /node_modules
