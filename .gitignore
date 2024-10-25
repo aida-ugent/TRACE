@@ -11,6 +11,7 @@ manuscript/
 
 # python envs
 backend/*_env/*
+backend/data_configs.yaml
 
 # data files
 data/*

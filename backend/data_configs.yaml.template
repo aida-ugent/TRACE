@@ -1,0 +1,16 @@
+# Dataset configuration (copy this file to backend/data_configs.yaml)
+# - filepath (str): path to the h5ad file
+# - description (str, optional): description of the dataset
+# - hd_data_key (str, optional): key specifying the high-dimensional data to use in adata.obsm. As default, adata.X is used. 
+# - hd_metric (str, optional): metric to use to compute distances in the high-dimensional space
+
+GaussLine:
+  description: "Gaussian clusters shifted along a line from B\xF6hm et al. (2022)"
+  filepath: ../data/gauss_line/gauss_line.h5ad
+Mammoth:
+  description: Mammoth dataset from Wang et al. (2021)
+  filepath: ../data/mammoth/mammoth.h5ad
+Human Immune:
+  description: Human Immune, Luecken et al. (2022)
+  filepath: ../data/immune/immune.h5ad
+  hd_data_key: X_pca

@@ -29,6 +29,10 @@ def get_available_datasets(config_filepath):
     Returns:
         dict: Cleaned config dictionary
     """
+    if not os.path.isfile(config_filepath):
+        print(f"Config file {config_filepath} not found. Please copy data_configs.yaml.template to data_configs.yaml.")
+        return None
+        
     with open(config_filepath, "r") as file:
         config = yaml.safe_load(file)
 
