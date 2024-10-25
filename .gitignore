@@ -14,7 +14,6 @@ backend/*_env/*
 
 # data files
 data/*
-backend/data_configs.yaml
 
 # dependencies
 /node_modules
