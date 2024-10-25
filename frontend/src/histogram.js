@@ -92,17 +92,33 @@ export const Histogram = ({ featureValues, xlabel, selectedPoints, selectedGroup
 
     const xScale = useMemo(() => {
         const allValues = data.map((group) => group.values).flat();
-        const max = allValues.reduce((a,b)=>a > b ? a : b);
-        const min = allValues.reduce((a,b)=>a < b ? a : b);
+        const max = allValues.reduce((a, b) => a > b ? a : b);
+        const min = allValues.reduce((a, b) => a < b ? a : b);
         return d3.scaleLinear().domain([min, max]).range([10, boundsWidth]).nice();
     }, [data, width]);
 
+
     const bucketGenerator = useMemo(() => {
+        const xAxisGenerator = d3.axisBottom(xScale);
+        const xTicks = xAxisGenerator.scale().ticks();
+        const numTicks = xAxisGenerator.scale().ticks().length;
+        var thresholds = [];
+        
+        if (xTicks.length - 1 <= 12) {
+            thresholds = xTicks.slice(0, numTicks - 1);
+        } else {
+            const max = Math.max(xAxisGenerator.scale().domain()[1], xTicks[xTicks.length - 1]);
+            const min = Math.min(xAxisGenerator.scale().domain()[0], xTicks[0]);
+            thresholds = [...Array(10)].map(
+               (item, i) => min + ((max-min) / 10) * i
+            );
+        }
+
         return d3
             .bin()
             .value((d) => d)
             .domain(xScale.domain())
-            .thresholds(xScale.ticks(BUCKET_NUMBER)); // approximate number of bins (not exact!)
+            .thresholds(thresholds); // just binning with the desired number of buckets does mess up the last bucket
     }, [xScale]);
 
     // create categorical axis
@@ -113,8 +129,8 @@ export const Histogram = ({ featureValues, xlabel, selectedPoints, selectedGroup
     }, [data]);
 
     const yScale = useMemo(() => {
-        const groupSizes = groupBuckets.map((group) => group.buckets.map((bucket) => (bucket?.length) / group.size).reduce((a,b)=>a > b ? a : b));
-        const max = groupSizes.reduce((a,b)=>a > b ? a : b);
+        const groupSizes = groupBuckets.map((group) => group.buckets.map((bucket) => (bucket?.length) / group.size).reduce((a, b) => a > b ? a : b));
+        const max = groupSizes.reduce((a, b) => a > b ? a : b);
         return d3.scaleLinear().range([boundsHeight, 0]).domain([0, max]).nice(10);
     }, [data, height]);
 
@@ -194,7 +210,10 @@ export const Histogram = ({ featureValues, xlabel, selectedPoints, selectedGroup
 
     const allRects = groupBuckets.map((group, i) =>
         group.buckets.map((bucket, j) => {
-            const { x0, x1 } = bucket;
+            var { x0, x1 } = bucket;
+            x0 = x0 < xScale.domain()[0] ? xScale.domain()[0] : x0;
+            x1 = x1 > xScale.domain()[1] ? xScale.domain()[1] : x1;
+
             if (x0 == undefined || x1 == undefined) {
                 return null;
             }
