@@ -185,9 +185,8 @@ export function Infobox(props) {
                 <HoverText pointData={getSingleHoverData(hoverState.pointId)} />
             </HoverNote>
             <div className="flex flex-col items-left my-2 justify-between">
-                <Switch.Group>
                     <div className="flex items-start justify-start">
-                        <label className="text-sm text-gray-500 w-fit min-w-fit" >show features on hover</label>
+                        <label className="text-sm text-gray-500 w-fit min-w-fit" htmlFor="hoverSwitch">show feature values on hover</label>
                         <span className="ml-3 mb-2">
                             <Switch
                                 id='hoverSwitch'
@@ -204,14 +203,14 @@ export function Infobox(props) {
                             </Switch>
                         </span>
                     </div>
-                </Switch.Group>
                 <GroupedSelect
                     onChange={hoverFeaturesOnChange}
                     options={hoverFeatureOptions}
                     selected={hoverFeatures}
                     isMulti={true}
                     isDisabled={!hoverNoteEnabled}
-                    isClearable={true} />
+                    isClearable={true}
+                    placeholder="select other features..." />
             </div>
         </>
     )

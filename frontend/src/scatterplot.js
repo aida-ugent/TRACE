@@ -629,7 +629,7 @@ export default function Scatterplot() {
                             <ResetButton onClick={resetZoomHandler} />
                         </div>
                         {/* Embedding method */}
-                        <div className="flex items-center min-w-[250px] p-2 justify-between">
+                        <div className="flex items-center w-[300px] p-2 justify-between">
                             <button
                                 type="button"
                                 className="h-fit select-none inline-flex rounded-full bg-white p-2 text-sm font-medium 

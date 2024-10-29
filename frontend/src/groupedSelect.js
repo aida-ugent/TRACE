@@ -1,7 +1,46 @@
-import React, { CSSProperties } from 'react';
+import { useState, useEffect } from 'react';
 import Select from 'react-select';
+import { createFilter, components } from 'react-select';
 
-export default function GroupedSelect({ options, selected, onChange, menuPlacement = 'auto', isMulti = false, isDisabled = false, isClearable = false }) {
+
+const CustomOption = ({ children, ...props }) => {
+    const { onMouseMove, onMouseOver, ...rest } = props.innerProps;
+    const newProps = { ...props, innerProps: rest };
+    return (
+        <components.Option {...newProps} className="transition background duration-60 hover:transition-delay-60 hover:bg-[#deebff]">
+            {children}
+        </components.Option>
+    );
+};
+
+
+export default function GroupedSelect({ options, selected, onChange, menuPlacement = 'auto',
+    isMulti = false, isDisabled = false, isClearable = false, placeholder = "Select..." }) {
+
+    const [savedSelection, setSelectedOption] = useState({ "value": "", "label": "" });
+
+    useEffect(() => {
+        if (options.length > 0 ** options[0]["options"].length > 0)
+            setSelectedOption(options[0]["options"][0]);
+    }, [options]);
+
+    useEffect(() => {
+        if (!isMulti && selected != null && selected != savedSelection["value"]) {
+            const foundOption = options.flatMap(group => group["options"]).find(option => option["value"] === selected);
+            if (foundOption) {
+                setSelectedOption(foundOption);
+            }
+        }
+    }, [selected, options]);
+
+    const updateSelection = (selection) => {
+        if (isMulti) {
+            onChange(selection);
+        } else {
+            setSelectedOption(selection);
+            onChange(selection["value"]);
+        }
+    }
 
     const groupStyles = {
         display: 'flex',
@@ -28,50 +67,28 @@ export default function GroupedSelect({ options, selected, onChange, menuPlaceme
         </div>
     );
 
+    return (
+        <Select
+            filterOption={createFilter({ ignoreAccents: false })}
+            components={{ Option: CustomOption }}
+            className='w-full text-slate-600 text-left'
+            isClearable={isClearable}
+            isDisabled={isDisabled}
+            isSearchable={true}
+            isMulti={isMulti}
+            menuPlacement={menuPlacement}
+            value={isMulti ? selected.map(v => { return { 'value': v, 'label': v } }) : savedSelection}
+            onChange={(selection) => { updateSelection(selection) }}
+            options={options}
+            formatGroupLabel={formatGroupLabel}
+            styles={{
+                control: (baseStyles, state) => ({
+                    ...baseStyles,
+                    whiteSpace: 'normal',
+                }),
+            }}
+            placeholder={placeholder}
+        />
+    )
 
-    if (isMulti) {
-        //transform array of selected values into array with {'value': v, 'lavel': v} objects
-        var selected_pairs = selected.map(v => {return { 'value': v, 'label': v }});
-        return (
-            <Select
-                className='w-full text-slate-600 text-left'
-                isClearable={isClearable}
-                isSearchable={true}
-                isDisabled={isDisabled}
-                isMulti
-                menuPlacement={menuPlacement}
-                value={selected_pairs}
-                onChange={(selection) => { onChange(selection); }}
-                options={options}
-                formatGroupLabel={formatGroupLabel}
-                styles={{
-                    control: (baseStyles, state) => ({
-                        ...baseStyles,
-                        whiteSpace: 'normal', //'pre-wrap',
-                    }),
-                }}
-            />
-        )
-    } else {
-
-        return (
-            <Select
-                className='w-full text-slate-600 text-left'
-                isClearable={isClearable}
-                isDisabled={isDisabled}
-                isSearchable={true}
-                menuPlacement={menuPlacement}
-                value={{ 'value': selected, 'label': selected }}
-                onChange={(selection) => { onChange(selection["value"]); }}
-                options={options}
-                formatGroupLabel={formatGroupLabel}
-                styles={{
-                    control: (baseStyles, state) => ({
-                        ...baseStyles,
-                        whiteSpace: 'normal', //'pre-wrap',
-                    }),
-                }}
-            />
-        )
-    }
 }
