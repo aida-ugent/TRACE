@@ -149,7 +149,6 @@ export const Explanation = ({ exclus, selectedPoints, pointColorOnChange, pointC
             };
             setExplanation(newExplanation);
             setIsLoading(false);
-            console.log(newExplanation);
         });
     };
 
@@ -161,7 +160,7 @@ export const Explanation = ({ exclus, selectedPoints, pointColorOnChange, pointC
     return (
         <div>
             <p className="text-sm text-gray-500 text-left my-1">
-                Rank features according to the <bf>Wasserstein distance</bf> between the histograms of
+                Rank features according to the Wasserstein distance between the histograms of
                 the selected points and the rest of the data (cluster vs. rest) or between two groups of points (cluster vs. cluster).
             </p>
 

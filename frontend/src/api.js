@@ -53,7 +53,7 @@ export function explainCluster(selectedPoints, explainabilityMethod) {
                 .then(response => {
                     if (!response.ok) {
                         console.log(`/backend/explainCluster got HTTP error: Status ${response.status}, Text ${response.statusText}`);
-                        resolve([]);
+                        resolve({"features": [], "higher_mean": []});
                     } else {
                         response.json().then(data => {
                             resolve(data);
@@ -62,7 +62,7 @@ export function explainCluster(selectedPoints, explainabilityMethod) {
                 })
         }
         else {
-            resolve([]);
+            resolve({"features": [], "higher_mean": []});
         }
     })
 }
