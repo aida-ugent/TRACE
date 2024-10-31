@@ -1,21 +1,32 @@
-from typing import List
-from fastapi import FastAPI, Body, HTTPException
-from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
-import numpy as np
-from utils import get_available_datasets
-from dataset import Dataset
+import argparse
+import os
+import sys
 from contextlib import asynccontextmanager
-import pandas as pd
-from pandas.api.types import CategoricalDtype
+from typing import List
+
 import continuous_palettes
 import neighbors
+import numpy as np
+import pandas as pd
 import uvicorn
-import argparse
+from dataset import Dataset
+from fastapi import Body, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pandas.api.types import CategoricalDtype
+from pydantic import BaseModel
+from utils import get_available_datasets
 
 API_PORT = 8000
 dataset = None
-dataset_configs = get_available_datasets("./data_configs.yaml")
+
+if os.path.isfile("./data_configs.yaml"):
+    dataset_configs = get_available_datasets("./data_configs.yaml")
+else:
+    print(
+        "Error: data_configs.yaml not found. Did you forget to create your own "
+        "data config using the data_configs.yaml.template?"
+    )
+    sys.exit(1)
 
 
 @asynccontextmanager
@@ -86,14 +97,15 @@ def loadDataset(datasetName: str):
         dataset.cleanup()
 
         if datasetName in dataset_configs.keys():
+            datasetNameConfig = dataset_configs[datasetName].pop("name", datasetName)
             try:
-                dataset = Dataset(name=datasetName, **dataset_configs[datasetName])
+                dataset = Dataset(name=datasetNameConfig, **dataset_configs[datasetName])
                 print(f"Loaded dataset {datasetName}")
             except FileNotFoundError as e:
                 print(f"Error loading dataset {datasetName}: {e}")
                 print(f"Now loading GaussianLine")
-                dataset = Dataset(name=datasetName, **dataset_configs["GaussLine"])
                 datasetName = "GaussLine"
+                dataset = Dataset(name=datasetName, **dataset_configs["GaussLine"])
         else:
             raise HTTPException(
                 status_code=500, detail=f"Dataset {datasetName} not found"
