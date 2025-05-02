@@ -142,7 +142,7 @@ trace_data.save_adata(filename="./gauss_line.h5ad")
 
 ### 3. Add Dataset Configuration
 
-To include a dataset in the dashboard you need to add the filepath in the configuration in [data_configs.yaml](./backend/data_configs.yaml). For the Gaussian Line dataset this would be:
+To include a dataset in the dashboard you need to create a file ```/backend/data_configs.yaml``` following the examples in [data_configs.yaml.template](./backend/data_configs.yaml.template). For the Gaussian Line dataset adding the following lines would be sufficient:
 ```json
 "GaussLine": {
     "filepath": "../data/gauss_line/gauss_line.h5ad",
