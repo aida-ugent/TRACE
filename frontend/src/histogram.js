@@ -27,7 +27,7 @@ const useDimensions = (targetRef) => {
     return dimensions;
 }
 
-const getHistogramData = (featureValues, selectedPoints, selectedGroupName) => {
+const getHistogramData = (featureValues, selectedPoints, selectedGroupName, selectedGroupColor = "#800080", otherGroupName = "other") => {
     let selectedValues = [];
     let unselectedValues = [];
 
@@ -55,10 +55,10 @@ const getHistogramData = (featureValues, selectedPoints, selectedGroupName) => {
         {
             name: selectedGroupName,
             values: selectedValues,
-            color: "#800080",
+            color: selectedGroupColor,
         },
         {
-            name: "other",
+            name: otherGroupName,
             values: unselectedValues,
             color: "#989898",
         },
@@ -71,7 +71,7 @@ const BUCKET_NUMBER = 10;
 const BUCKET_PADDING = 4;
 
 // from https://www.react-graph-gallery.com/histogram
-export const Histogram = ({ featureValues, xlabel, selectedPoints, selectedGroupName }) => {
+export const Histogram = ({ featureValues, xlabel, selectedPoints, selectedGroupName, selectedGroupColor, otherGroupName }) => {
     const targetRef = useRef(null);
     const dimensions = useDimensions(targetRef);
     const width = dimensions.width;
@@ -81,7 +81,7 @@ export const Histogram = ({ featureValues, xlabel, selectedPoints, selectedGroup
     const boundsWidth = width - MARGIN.right - MARGIN.left;
     const boundsHeight = height - MARGIN.top - MARGIN.bottom;
 
-    const data = getHistogramData(featureValues, selectedPoints, selectedGroupName);
+    const data = getHistogramData(featureValues, selectedPoints, selectedGroupName, selectedGroupColor, otherGroupName);
 
     const allGroupNames = data.map((group) => group.name);
     const allGroupColors = data.map((group) => group.color);

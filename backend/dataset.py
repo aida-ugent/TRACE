@@ -992,11 +992,11 @@ class Dataset:
                 type(self.adata.X).__name__ == "csr_matrix"
                 or type(self.adata.X).__name__ == "SparseDataset"
             ):
-                A_array = self.adata.X[selectionA, :].toarray()
-                B_array = self.adata.X[selectionB, :].toarray()
+                A_array = self.adata.X[selectionA, :].toarray().astype(np.float64)
+                B_array = self.adata.X[selectionB, :].toarray().astype(np.float64)
             else:
-                A_array = self.adata.X[selectionA, :]
-                B_array = self.adata.X[selectionB, :]
+                A_array = np.asarray(self.adata.X[selectionA, :], dtype=np.float64)
+                B_array = np.asarray(self.adata.X[selectionB, :], dtype=np.float64)
 
             feature_list, importance = feature_importance.get_feature_importance(
                 A=A_array,

@@ -96,3 +96,25 @@ export function compareClusters(selectionA, selectionB) {
         }
     })
 }
+
+export function getFeatureValues(featureName) {
+    return new Promise((resolve, reject) => {
+        fetch(`${backend_url}/backend/featureValues/${featureName}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8"
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    console.log(`/backend/featureValues/${featureName} got HTTP error: Status ${response.status}, Text ${response.statusText}`);
+                    resolve([]);
+                } else {
+                    response.json().then(data => {
+                        resolve(data["result"]);
+                    })
+                }
+            })
+        })
+    }

@@ -1,9 +1,9 @@
 import numpy as np
-from numba import jit, prange
+from numba import jit, prange, f8, f4
 from numba.typed import List
 
 
-@jit(nopython=True, parallel=True, cache=True)
+@jit([f8[:](f8[:, :], f8[:, :]), f8[:](f4[:, :], f4[:, :])], nopython=True, parallel=True, cache=True)
 def get_histogram_intersection(A: np.ndarray, B: np.ndarray):
     # A and B must have the same dimensionality
 
@@ -52,7 +52,7 @@ def get_histogram_intersection(A: np.ndarray, B: np.ndarray):
     return hist_intersections
 
 
-@jit(nopython=True, parallel=True, cache=True)
+@jit([f8[:](f8[:, :], f8[:, :]), f8[:](f4[:, :], f4[:, :])], nopython=True, parallel=True, cache=True)
 def wasserstein_histogram_distance(A: np.ndarray, B: np.ndarray):
     d = A.shape[1]
     distances = np.empty((d,))

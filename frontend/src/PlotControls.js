@@ -320,7 +320,8 @@ export function SettingsMenu(props) {
                     featureValues={pointColors["values"]}
                     xlabel={selectedPointColor}
                     selectedPoints={selectedPoints}
-                    selectedGroupName="selected" />
+                    selectedGroupName="selected" 
+                    otherGroupName="not selected"/>
                 }
 
                 {/* Dodged Barplot */}
@@ -446,6 +447,7 @@ export function SettingsMenu(props) {
                   selectedPoints={selectedPoints}
                   pointColorOnChange={pointColorOnChange}
                   pointColorOptions={pointColorOptions} 
+                  pointColors={pointColors}
                   scatterplot={scatterplot}
                   selectedPointColor={selectedPointColor}/>
               </Tab>

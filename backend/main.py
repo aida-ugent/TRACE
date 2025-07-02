@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pandas.api.types import CategoricalDtype
 from pydantic import BaseModel
 from utils import get_available_datasets
-
+import time
 API_PORT = 8000
 dataset = None
 
@@ -33,7 +33,7 @@ else:
 async def lifespan(app: FastAPI):
     global dataset
     print("Starting server")
-    dataset = Dataset(name="tmp", hd_data=np.zeros((1, 1)))
+    dataset = Dataset(name="tmp", hd_data=np.zeros((10, 10)))
     yield
     if dataset is not None:
         dataset.cleanup()
@@ -99,7 +99,9 @@ def loadDataset(datasetName: str):
         if datasetName in dataset_configs.keys():
             datasetNameConfig = dataset_configs[datasetName].pop("name", datasetName)
             try:
-                dataset = Dataset(name=datasetNameConfig, **dataset_configs[datasetName])
+                dataset = Dataset(
+                    name=datasetNameConfig, **dataset_configs[datasetName]
+                )
                 print(f"Loaded dataset {datasetName}")
             except FileNotFoundError as e:
                 print(f"Error loading dataset {datasetName}: {e}")
@@ -491,17 +493,19 @@ async def getUnstablePoints(
 async def explainCluster(item: PointSelection = Body(...)):
     indices = item.points
     method = item.selection_name
+    start = time.time()
     features, higher_mean = dataset.explain_cluster(indices, method=method)
-    return {"features": features.tolist(),
-            "higher_mean": higher_mean.tolist()}
+    print(
+        f"Explaining cluster {method} with {len(indices)} points took {time.time() - start:.2f} seconds"
+    )
+    return {"features": features.tolist(), "higher_mean": higher_mean.tolist()}
 
 
 @app.post("/backend/compareClusters")
 async def compareClusters(item: clusterSelection = Body(...)):
     features, higher_mean = dataset.compareClusters(item.selectionA, item.selectionB)
-    return {"features": features.tolist(),
-            "higher_mean": higher_mean.tolist()}
-    
+    return {"features": features.tolist(), "higher_mean": higher_mean.tolist()}
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
