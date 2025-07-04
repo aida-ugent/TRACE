@@ -516,21 +516,6 @@ class Dataset:
                 # make sure the embedding is still normalized
                 self.adata.obsm[name] = utils.normalizeEmbedding(self.adata.obsm[name])
 
-    #############################
-    ## ExClus Clustering       ##
-    #############################
-
-    def get_exclus_results(self):
-        if "ExClus" in self.adata.uns_keys():
-            features = []
-            for c in self.adata.uns["ExClus"].keys():
-                if "cluster" in c:
-                    features.append(
-                        [c, self.adata.uns["ExClus"][c]["attributes"].tolist()]
-                    )
-            return features
-        else:
-            return None
 
     #############################
     ## Quality Score Functions ##

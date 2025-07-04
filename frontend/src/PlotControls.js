@@ -137,7 +137,6 @@ export function SettingsMenu(props) {
     handlePointColorScaling,
     hoverNeighborsEnabled,
     setHoverNeighborsEnabled,
-    exclus,
     selectedPoints,
     children } = props
 
@@ -443,7 +442,6 @@ export function SettingsMenu(props) {
 
               <Tab label="Exploration">
                 <Explanation
-                  exclus={exclus}
                   selectedPoints={selectedPoints}
                   pointColorOnChange={pointColorOnChange}
                   pointColorOptions={pointColorOptions} 

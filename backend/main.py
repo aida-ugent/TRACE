@@ -132,7 +132,6 @@ def loadDataset(datasetName: str):
         "dataset_info": dataset.description,
         "embedding_options": dataset.get_embedding_options(),
         "point_color_options": point_color_options,
-        "exclus": dataset.get_exclus_results(),
     }
 
 
