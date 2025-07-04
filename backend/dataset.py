@@ -994,7 +994,7 @@ class Dataset:
 
         except Exception as e:
             print(f"get_differentiating_features error: {e}")
-            return []
+            return (np.array([]), np.array([]))
 
         features = self.adata.var_names[feature_list[0:n_features]].values
         return (features, A_larger)

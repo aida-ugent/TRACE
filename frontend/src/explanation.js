@@ -24,10 +24,11 @@ const downArrow = <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0
 
 const FeatureTags = ({ features, selectedPointColor, onFeatureClick }) => {
     return (
-        <div className="flex flex-wrap gap-2 items-start justify-start">        {features.map((feature) => {
-            const name = feature[0];
-            const isHigher = feature[1];
-            const isSelected = name === selectedPointColor;
+        <div className="flex flex-wrap gap-2 items-start justify-start">
+            {features.map((feature) => {
+                const name = feature[0];
+                const isHigher = feature[1];
+                const isSelected = name === selectedPointColor;
 
                 return (
                     <span
@@ -118,8 +119,15 @@ export const ComparingClusters = ({ selectedPoints, pointColorOnChange, pointCol
         }
 
         setIsLoading(true);
-        compareClusters(selectionA, finalSelectionB).then((explanation) => {
-            const features = explanation.features.map((feature, i) => [feature, explanation.higher_mean[i]]);
+        compareClusters(selectionA, finalSelectionB).then((result) => {
+            // Add error handling for undefined response
+            if (!result || !result.features || !result.higher_mean) {
+                console.error('Invalid API response:', result);
+                setIsLoading(false);
+                return;
+            }
+            
+            const features = result.features.map((feature, i) => [feature, result.higher_mean[i]]);
 
             const newExplanation = {
                 features: features,
@@ -127,6 +135,9 @@ export const ComparingClusters = ({ selectedPoints, pointColorOnChange, pointCol
                 selectionB: finalSelectionB
             };
             setExplanation(newExplanation);
+            setIsLoading(false);
+        }).catch((error) => {
+            console.error('API error:', error);
             setIsLoading(false);
         });
     }

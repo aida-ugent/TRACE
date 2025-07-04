@@ -53,7 +53,7 @@ export function explainCluster(selectedPoints, explainabilityMethod) {
                 .then(response => {
                     if (!response.ok) {
                         console.log(`/backend/explainCluster got HTTP error: Status ${response.status}, Text ${response.statusText}`);
-                        resolve({"features": [], "higher_mean": []});
+                        resolve({ "features": [], "higher_mean": [] });
                     } else {
                         response.json().then(data => {
                             resolve(data);
@@ -62,7 +62,7 @@ export function explainCluster(selectedPoints, explainabilityMethod) {
                 })
         }
         else {
-            resolve({"features": [], "higher_mean": []});
+            resolve({ "features": [], "higher_mean": [] });
         }
     })
 }
@@ -83,7 +83,7 @@ export function compareClusters(selectionA, selectionB) {
                 .then(response => {
                     if (!response.ok) {
                         console.log(`/backend/compareClusters got HTTP error: Status ${response.status}, Text ${response.statusText}`);
-                        resolve([]);
+                        resolve({ "features": [], "higher_mean": [] });
                     } else {
                         response.json().then(data => {
                             resolve(data);
@@ -92,7 +92,7 @@ export function compareClusters(selectionA, selectionB) {
                 })
         }
         else {
-            resolve([]);
+            resolve({ "features": [], "higher_mean": [] });
         }
     })
 }
