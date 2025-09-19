@@ -13,13 +13,9 @@ export default function CanvasWrapper({ setScatterLoaded, setScatterplot }) {
     }
 
     return (
-        <Canvas data={{
-            "filename": "none",
-            "data": {
-                "x": [0, 0.02, 0.01],
-                "y": [0, 0, 0.02],
-                "z": [0, 1, 2]
-            }
-        }} setScatterplot={setScatterplot} setScatterLoaded={setScatterLoaded} />
+        <Canvas
+            setScatterplot={setScatterplot}
+            setScatterLoaded={setScatterLoaded}
+        />
     )
 }

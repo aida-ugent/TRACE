@@ -4,6 +4,19 @@ TRACE<sup>[1](#trace)</sup> supports you in analyzing **global and local quality
 
 ![screenshot](data/TRACE_screenshot.png)
 
+### Overview
+
+- [Installation](#installation)
+- [Data Preparation](#data-preparation)
+  - [Adding 2-dimensional embeddings](#1-adding-2-dimensional-embeddings)
+  - [Computing High-Dimensional Neighbors and Quality Measures](#2-computing-high-dimensional-neighbors-and-quality-measures)
+  - [Add Dataset Configuration](#3-add-dataset-configuration)
+- [Data Exploration](#data-exploration)
+- [Example Datasets](#example-datasets)
+- [Citation](#citation)
+- [References](#references)
+
+
 ## Installation
 
 <details>
@@ -150,6 +163,28 @@ To include a dataset in the dashboard you need to create a file ```/backend/data
 }
 ```
 
+[↑ Top](#pattern-or-artifact-interactively-exploring-embedding-quality-with-trace)
+
+## Data Exploration
+
+You can watch a demo of exploring a dataset with TRACE on youtube.
+[![Pattern or Artifact? Interactively Exploring Embedding Quality with TRACE
+](https://img.youtube.com/vi/mtyFzXt51Jw/0.jpg)](https://www.youtube.com/watch?v=mtyFzXt51Jw)
+
+
+To explore the embedding and select points you should use the following keymaps:
+
+| Feature                | Mouse action        |
+|------------------------|-------------|
+| single point selection| left click       |
+| deselect all       | double click on empty region   |    
+| lasso selection        | shift + click on emptfy space and drag to draw  |  
+| add to current selection    | ctrl + click on a single point or <br>ctrl + shift to add a new lasso selection  |
+| remove from current selection    | alt + click on a single point or <br>alt + shift to remove a new lasso selection     |
+| zoom in and out | mouse wheel       | 
+
+[↑ Top](#pattern-or-artifact-interactively-exploring-embedding-quality-with-trace)
+
 ## Example Datasets
 
 ### Gaussian Line 🟢 🟠 🟣
@@ -161,8 +196,10 @@ This dataset from Wang et al. can be downloaded from their [PaCMAP](https://gith
 ### Single-Cell Mouse Data 🐁
 The processed dataset of gene expressions from [Guilliams et al.](https://pubmed.ncbi.nlm.nih.gov/35021063/) is not available online, please reach out if you are interested. A raw version is available under [GSE192742](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE192742).
 
+[↑ Top](#pattern-or-artifact-interactively-exploring-embedding-quality-with-trace)
 
 ## Citation
+
 TRACE was presented as a [demo paper](https://link.springer.com/chapter/10.1007/978-3-031-70371-3_24) at ECML-PKDD 2024. If you find the tool useful and are using it in your research, we'd appreciate if you could cite our paper:
 
 ```bibtex
@@ -176,9 +213,12 @@ TRACE was presented as a [demo paper](https://link.springer.com/chapter/10.1007/
 }
 ```
 
-***
+**Note**
+The functionality to contrast clusters int the "Exploration" tab was not part of the peer-reviewed publication. 
 
+***
+### References
 <a name="trace">[1]</a> TRACE stands for Two-dimensional representation Analysis and Comparison Engine<br />
 <a name="regl_citation">[2]</a> Lekschas, Fritz. "Regl-Scatterplot: A Scalable Interactive JavaScript-based Scatter Plot Library." Journal of Open Source Software (2023)
 
-[⬆️ Back to top](#pattern-or-artefact-interactively-exploring-embedding-quality-with-trace)
+[↑ Top](#pattern-or-artifact-interactively-exploring-embedding-quality-with-trace)
