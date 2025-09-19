@@ -27,7 +27,7 @@ export function Canvas({ setScatterLoaded, setScatterplot}) {
                 lassoColor: [.3, .3, .3, .7],
                 lassoMinDelay: 0,
                 lassoMinDist: 1,
-                actionKeyMap: { remove: 'ctrl', merge: 'cmd', lasso: 'shift' },
+                actionKeyMap: { remove: 'alt', merge: 'ctrl', lasso: 'shift' },
                 showReticle: true,
                 reticleColor: [.3, .3, .3, 0.66],
                 cameraDistance: 1.2,
