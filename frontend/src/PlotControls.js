@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { ReactSelect, SavePointForm } from "./utils";
 import { SettingsButton, ChevronRightButton, AsyncButton, DefaultButton } from "./buttons";
 import { Switch } from '@headlessui/react'
@@ -9,6 +9,7 @@ import Checkbox, { Radio } from "./checkbox";
 import { backend_url } from "./api";
 import { Tooltip } from 'react-tooltip';
 import { Histogram } from "./histogram";
+import { RangeFilter } from "./RangeFilter";
 import { DodgedBarplot, StackedBarplot } from "./barplot";
 
 const showLandmarks = (scatterplot) => {
@@ -136,12 +137,36 @@ export function SettingsMenu(props) {
     hoverNeighborsEnabled,
     setHoverNeighborsEnabled,
     selectedPoints,
+    rangeFilterResetTrigger,
+    handleRangeFilterChange,
     children } = props
 
   const [visibility, setVisibility] = useState('visible')
   const [unstablePointFraction, setUnstablePointFraction] = useState(0.1);
   const [opacityByDensity, setOpacityByDensity] = useState(true);
   const [opacity, setOpacity] = useState({ 'slider': 0.2, 'value': scaleOpacity(0.2) });
+  
+  // Range filter state - persists across tab switches
+  const [rangeFilterMin, setRangeFilterMin] = useState(null);
+  const [rangeFilterMax, setRangeFilterMax] = useState(null);
+
+  // Calculate the full range from feature values for reset purposes
+  const { fullRangeMin, fullRangeMax } = useMemo(() => {
+    if (!pointColors || !pointColors.values || pointColors.values.length === 0) {
+      return { fullRangeMin: 0, fullRangeMax: 1 };
+    }
+    const min = Math.min(...pointColors.values);
+    const max = Math.max(...pointColors.values);
+    return { fullRangeMin: min, fullRangeMax: max };
+  }, [pointColors]);
+
+  // Initialize range filter to full range when data loads
+  useEffect(() => {
+    if (rangeFilterMin === null && rangeFilterMax === null && fullRangeMin !== undefined && fullRangeMax !== undefined) {
+      setRangeFilterMin(fullRangeMin);
+      setRangeFilterMax(fullRangeMax);
+    }
+  }, [rangeFilterMin, rangeFilterMax, fullRangeMin, fullRangeMax]);
 
   const toggleVisibility = () => {
     if (visibility == "visible") setVisibility("hidden"); else setVisibility("visible");
@@ -155,6 +180,30 @@ export function SettingsMenu(props) {
       //scatterplot.set({ width, height });
     }
   }, [visibility])
+
+  // Reset range filter values when reset trigger changes
+  useEffect(() => {
+    setRangeFilterMin(fullRangeMin);
+    setRangeFilterMax(fullRangeMax);
+    // Also call the parent handler to clear any applied filters
+    handleRangeFilterChange(null, null);
+  }, [rangeFilterResetTrigger]);
+
+  // Local range filter handler that stores values and calls parent
+  const handleRangeChange = (minVal, maxVal) => {
+    setRangeFilterMin(minVal);
+    setRangeFilterMax(maxVal);
+    
+    // Apply filtering logic here
+    const isMinFiltered = minVal > fullRangeMin;
+    const isMaxFiltered = maxVal < fullRangeMax;
+    
+    if (isMinFiltered || isMaxFiltered) {
+      handleRangeFilterChange(isMinFiltered ? minVal : null, isMaxFiltered ? maxVal : null);
+    } else {
+      handleRangeFilterChange(null, null);
+    }
+  };
 
   const toggleOpacityByDensity = (byDensity) => {
     setOpacityByDensity(byDensity);
@@ -313,11 +362,22 @@ export function SettingsMenu(props) {
 
                 {/* Histogram */}
                 {pointColors["type"] === "continuous" && pointColors["values"].length > 0 &&
-                  <Histogram
-                    featureValues={pointColors["values"]}
-                    xlabel={selectedPointColor}
-                    selectedPoints={selectedPoints}
-                    selectedGroupName="selected" />
+                  <>
+                    <Histogram
+                      featureValues={pointColors["values"]}
+                      xlabel={selectedPointColor}
+                      selectedPoints={selectedPoints}
+                      selectedGroupName="selected" />
+                    
+                    {/* Range Filter */}
+                    <RangeFilter
+                      featureValues={pointColors["values"]}
+                      title={selectedPointColor}
+                      onRangeChange={handleRangeChange}
+                      minValue={rangeFilterMin}
+                      maxValue={rangeFilterMax}
+                    />
+                  </>
                 }
 
                 {/* Dodged Barplot */}

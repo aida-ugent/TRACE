@@ -74,6 +74,42 @@ const resetPointFilter = () => {
     filteredPoints = [...Array(numPoints).keys()];
 }
 
+const applyRangeFilter = (featureValues, minVal, maxVal) => {
+    // Check if scatterplot is initialized
+    if (!scatterplot) {
+        console.log("Scatterplot not initialized yet, skipping range filter");
+        return;
+    }
+
+    if (minVal === null && maxVal === null) {
+        // No filter applied, show all points
+        resetPointFilter();
+        scatterplot.filter(filteredPoints);
+        return;
+    }
+
+    let show = [];
+    featureValues.forEach((value, i) => {
+        let includePoint = true;
+        
+        if (minVal !== null && value < minVal) {
+            includePoint = false;
+        }
+        if (maxVal !== null && value > maxVal) {
+            includePoint = false;
+        }
+        
+        if (includePoint) {
+            show.push(i);
+        }
+    });
+
+    const hiddenLength = featureValues.length - show.length;
+    filteredPoints = show;
+    scatterplot.filter(show);
+    console.log(`Range filter: showing ${show.length} points, hiding ${hiddenLength} points`);
+}
+
 const getPointColors = (embName, featureName, setBackendStatus = () => { }, selectedMetric) => {
     var fetchStr = `${backend_url}/backend/pointColor/${featureName}?embeddingName=${embName}`;
 
@@ -247,6 +283,9 @@ export default function Scatterplot() {
     const [maxNeighbors, setMaxNeighbors] = useState(0);
     const [datasetName, setDatasetName] = useState(null);
 
+    // Range filter state
+    const [rangeFilterResetTrigger, setRangeFilterResetTrigger] = useState(0);
+
     // hover over points to show HD neighbors
     const [hoverNeighborsEnabled, setHoverNeighborsEnabled] = useState(false);
     const [pointOverUnsubscriber, setPointOverUnsubscriber] = useState(null);
@@ -374,6 +413,10 @@ export default function Scatterplot() {
                                         setPointColors(pointColors);
                                         setPointColorScaling(1.0);
                                         setPointSize(getPointSize(numPoints));
+                                        
+                                        // Reset range filter when dataset changes
+                                        setRangeFilterResetTrigger(prev => prev + 1);
+                                        
                                         console.log("Finished loading data")
                                         setLoadingFunction(false);
                                         setLoadingMessage("");
@@ -422,7 +465,17 @@ export default function Scatterplot() {
                 delete res["colorMap"];
                 setPointColors(res);
                 setPointColorScaling(1.0);
+                
+                // Reset range filter when point color changes
+                setRangeFilterResetTrigger(prev => prev + 1);
             })
+    }
+
+    const handleRangeFilterChange = (minVal, maxVal) => {
+        // Only apply filter if scatterplot is initialized and we have point colors
+        if (scatterplot && pointColors && pointColors.values) {
+            applyRangeFilter(pointColors.values, minVal, maxVal);
+        }
     }
 
     // ##### HD Neighbors Hover ############
@@ -706,6 +759,8 @@ export default function Scatterplot() {
                     hoverNeighborsEnabled={hoverNeighborsEnabled}
                     setHoverNeighborsEnabled={setHoverNeighborsEnabled}
                     selectedPoints={selectedPoints}
+                    rangeFilterResetTrigger={rangeFilterResetTrigger}
+                    handleRangeFilterChange={handleRangeFilterChange}
                 >
                     {/* Dataset */}
                     <div className="flex flex-col items-left my-2 justify-between">
