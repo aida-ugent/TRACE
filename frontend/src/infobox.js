@@ -186,7 +186,7 @@ export function Infobox(props) {
             </HoverNote>
             <div className="flex flex-col items-left my-2 justify-between">
                     <div className="flex items-start justify-start">
-                        <label className="text-sm text-gray-500 w-fit min-w-fit" htmlFor="hoverSwitch">show feature values on hover</label>
+                        <label className="text-sm w-fit min-w-fit" htmlFor="hoverSwitch">show feature values on hover</label>
                         <span className="ml-3 mb-2">
                             <Switch
                                 id='hoverSwitch'

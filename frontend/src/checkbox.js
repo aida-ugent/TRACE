@@ -26,7 +26,7 @@ export default function Checkbox({ text, id, onChange, checked, children }) {
                     </svg>
                 </span>
             </label>
-            <label className="mt-px text-sm text-gray-500 cursor-pointer select-none" htmlFor={id}>
+            <label className="mt-px text-sm cursor-pointer select-none" htmlFor={id}>
                 {text}
             </label>
         </div>

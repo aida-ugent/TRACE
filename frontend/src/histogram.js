@@ -203,9 +203,9 @@ export const Histogram = ({ featureValues, xlabel, selectedPoints, selectedGroup
             .style("text-anchor", "middle")
             .text(xlabel);
 
-        svgElement.selectAll("text").attr("font-size", 14);
-        svgElement.selectAll("path").style("stroke", "gray");
-        svgElement.selectAll("line").style("stroke", "gray");
+        svgElement.selectAll("text").attr("font-size", 14).style("fill", "#4b5563");
+        svgElement.selectAll("path").style("stroke", "#4b5563");
+        svgElement.selectAll("line").style("stroke", "#4b5563");
     }, [xScale, yScale, boundsHeight]);
 
     const allRects = groupBuckets.map((group, i) =>

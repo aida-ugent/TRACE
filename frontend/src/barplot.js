@@ -227,6 +227,10 @@ export const DodgedBarplot = ({
             .style("text-anchor", "middle")
             .text("relative frequency");
 
+        svgElement.selectAll("text").attr("font-size", 14).style("fill", "#4b5563");
+        svgElement.selectAll("path").style("stroke", "#4b5563");
+        svgElement.selectAll("line").style("stroke", "#4b5563");
+
     }, [xScale, yScale, boundsHeight]);
 
     const barwidth = 10 / 21 * xScale.bandwidth();
@@ -360,6 +364,10 @@ export const StackedBarplot = ({
             .attr("x", boundsWidth / 2)
             .style("text-anchor", "middle")
             .text(xlabel);
+
+        svgElement.selectAll("text").attr("font-size", 14).style("fill", "#4b5563");
+        svgElement.selectAll("path").style("stroke", "#4b5563");
+        svgElement.selectAll("line").style("stroke", "#4b5563");
     }, [xScale, yScale, boundsHeight]);
 
     const rectangles = series.map((subgroup, i) => {

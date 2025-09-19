@@ -85,7 +85,7 @@ class NamedSlider extends Component {
     return (
       <>
         <label
-          className="text-sm text-gray-500 w-fit min-w-fit"
+          className="text-sm w-fit min-w-fit"
           htmlFor="neighborSlider">
           {
             this.props.names !== undefined ?

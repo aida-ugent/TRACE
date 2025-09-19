@@ -285,14 +285,14 @@ export function SettingsMenu(props) {
 
                 {/* Point Colors */}
                 <div className="flex flex-col items-left my-2 justify-between">
-                  <label className="text-sm text-gray-500 w-fit min-w-fit" >point colors</label>
+                  <label className="text-sm w-fit min-w-fit" >point colors</label>
                   <GroupedSelect onChange={pointColorOnChange} options={pointColorOptions} selected={selectedPointColor} />
                 </div>
 
                 <div className='flex flex-wrap items-center justify-between my-2'>
                   {/* Point Size */}
                   <div className='flex flex-col w-1/2 items-left pr-2 justify-between'>
-                    <label className="text-sm text-gray-500 w-fit min-w-fit" htmlFor="pointSizeSlider">point size</label>
+                    <label className="text-sm w-fit min-w-fit" htmlFor="pointSizeSlider">point size</label>
                     <input
                       className="transparent h-[2px] cursor-pointer appearance-none border-transparent bg-neutral-300 mb-2 mt-3"
                       type="range"
@@ -308,7 +308,7 @@ export function SettingsMenu(props) {
                   {/* Point Opacity */}
                   <div className='flex flex-col w-1/2 items-left pl-2 justify-between'>
                     <div className="flex flex-row items-center justify-left">
-                      <label className="text-sm text-gray-500 w-fit min-w-fit" htmlFor="opacityCheckbox">opacity by density</label>
+                      <label className="text-sm w-fit min-w-fit" htmlFor="opacityCheckbox">opacity by density</label>
                       <Checkbox
                         text=""
                         id='opacityCheckbox'
@@ -341,7 +341,7 @@ export function SettingsMenu(props) {
 
                 {/* Legend */}
                 <div className="flex flex-wrap items-start my-2 justify-start">
-                  <label className="text-sm text-gray-500 w-fit min-w-fit mr-2" htmlFor='hoverSwitch'>show legend</label>
+                  <label className="text-sm w-fit min-w-fit mr-2" htmlFor='hoverSwitch'>show legend</label>
                   {/* <div className="w-1/2 flex items-start justify-start"> */}
                   <span className="ml-1">
                     <Switch
@@ -397,9 +397,9 @@ export function SettingsMenu(props) {
                 {/* Distance measures */}
                 <div className="flex flex-col items-left my-2 justify-between">
                   <div className='flex flex-row'>
-                    <label className="text-sm text-gray-500 w-fit min-w-fit mr-1">HD metric</label>
+                    <label className="text-sm w-fit min-w-fit mr-1">HD metric</label>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"
-                      className="size-5 cursor-pointer text-gray-500"
+                      className="size-5 cursor-pointer"
                       data-tooltip-id="hdmetric-tooltip">
                       <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
                     </svg>
@@ -415,7 +415,7 @@ export function SettingsMenu(props) {
                 <h4 className="text-md font-large leading-6 text-gray-900 w-fit mt-3" >
                   High-dimensional neighbors
                 </h4>
-                <p className="text-sm text-gray-500 text-left my-1">
+                <p className="text-sm text-left my-1">
                   Visualize the high-dimensional neighbors of any point in the 2D embedding to explore the local quality.
                 </p>
 
@@ -423,9 +423,9 @@ export function SettingsMenu(props) {
                 <div className='flex flex-wrap items-start justify-between my-2'>
                   <div className='flex flex-col w-1/2 items-left pr-2 justify-between'>
                     <div className='flex flex-row'>
-                      <label className="text-sm text-gray-500 w-fit min-w-fit mr-1" htmlFor="neighborsSlider">neighbors {kNeighbors}</label>
+                      <label className="text-sm w-fit min-w-fit mr-1" htmlFor="neighborsSlider">neighbors {kNeighbors}</label>
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"
-                        className="size-5 cursor-pointer text-gray-500"
+                        className="size-5 cursor-pointer"
                         data-tooltip-id="neighbors-tooltip">
                         <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
                       </svg>
@@ -445,7 +445,7 @@ export function SettingsMenu(props) {
 
                   {/* Hover neighbors */}
                   <div className="flex-row items-start text-left justify-left w-1/2 pl-2">
-                    <label className="text-sm text-gray-500 w-fit min-w-fit" >show on hover</label>
+                    <label className="text-sm w-fit min-w-fit" >show on hover</label>
                     <span className="ml-3">
                       <Switch
                         id='hoverSwitch'
@@ -480,7 +480,7 @@ export function SettingsMenu(props) {
                 <h4 className="text-md font-large leading-6 text-gray-900 w-fit mt-3" >
                   High-dimensional distances
                 </h4>
-                <p className="text-sm text-gray-500 text-left my-1">
+                <p className="text-sm text-left my-1">
                   Select a single point to color points according to their HD distance. The point colors are based on the distances between&nbsp;
                   <a onClick={() => showLandmarks(scatterplot)} className="underline cursor-pointer">landmark points</a>.
                 </p>
@@ -490,7 +490,7 @@ export function SettingsMenu(props) {
                   </DefaultButton>
                 </div>
 
-                <span className="select-none text-sm text-gray-500 text-left my-2">
+                <span className="select-none text-sm text-left my-2">
                   <p> Add current point selection to user_annotations.json</p>
                 </span>
 
