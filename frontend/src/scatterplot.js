@@ -763,8 +763,8 @@ export default function Scatterplot() {
                     handleRangeFilterChange={handleRangeFilterChange}
                 >
                     {/* Dataset */}
-                    <div className="flex flex-col items-left my-2 justify-between">
-                        <label className="text-sm w-fit min-w-fit mr-2" >Data</label>
+                    <div className="flex flex-col items-left space-y-2 justify-between">
+                        <label className="text-sm w-fit min-w-fit mr-2 font-medium" >Data</label>
                         <ReactSelect
                             options={datasetOptions.map(v => { return { value: v, label: v } })}
                             selected={datasetName}
