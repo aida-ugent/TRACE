@@ -157,7 +157,7 @@ function update_point_color({
 };
 
 
-function showEmbedding({
+async function showEmbedding({
     embedding, pointColor, colorMap, opacities, useTransition = true,
     preventFilterReset = true, opacityBy = null, setLoadingFn = null,
     opacityValues = null, pointSize = null }) {
@@ -165,7 +165,7 @@ function showEmbedding({
     if (!preventFilterReset) resetPointFilter();
     if (setLoadingFn != null) setLoadingFn(false);
 
-    scatterplot
+    await scatterplot
         .draw(
             {
                 x: embedding['x'],
@@ -180,16 +180,16 @@ function showEmbedding({
                 preventFilterReset: preventFilterReset,
                 zDataType: pointColor["type"]
             }
-        ).then(() => {
-            scatterplot.set({
-                cameraView: cview,
-                pointColor: colorMap["colors"],
-                opacityBy: opacityBy != null ? opacityBy : scatterplot.get('opacityBy'),
-                opacity: opacityValues != null ? opacityValues : scatterplot.get('opacity'),
-                pointSize: pointSize != null ? pointSize : scatterplot.get('pointSize'),
-                //pointColorActive: "#ffba08", //"#55308d"
-            })
-        })
+        );
+
+    scatterplot.set({
+        cameraView: cview,
+        pointColor: colorMap["colors"],
+        opacityBy: opacityBy != null ? opacityBy : scatterplot.get('opacityBy'),
+        opacity: opacityValues != null ? opacityValues : scatterplot.get('opacity'),
+        pointSize: pointSize != null ? pointSize : scatterplot.get('pointSize'),
+        //pointColorActive: "#ffba08", //"#55308d"
+    });
 }
 
 
@@ -516,41 +516,44 @@ export default function Scatterplot() {
         })
     }
 
-    const handleEmbeddingSelect = (newEmbeddingName) => {
+    const handleEmbeddingSelect = async (newEmbeddingName) => {
         setLoadingMessage(`Fetching ${newEmbeddingName} embedding...`);
 
-        fetchEmbedding(newEmbeddingName, setBackendStatus)
-            .then(newEmbedding => {
-                setActiveEmbedding(newEmbedding);
-                setEmbeddingName(newEmbeddingName);
+        try {
+            const newEmbedding = await fetchEmbedding(newEmbeddingName, setBackendStatus);
+            setActiveEmbedding(newEmbedding);
+            setEmbeddingName(newEmbeddingName);
 
-                if (pointColors["group"] === "quality") {
-                    // pointColor was quality of old embedding ... recompute
-                    getPointColors(newEmbeddingName, selectedPointColor, setBackendStatus, selectedMetric)
-                        .then((res) => {
-                            if ("none" in res["colorMap"]) {
-                                setSelectedPointColor("none");
-                                setPointColorScaling(1.0);
-                            }
-                            showEmbedding({
-                                embedding: newEmbedding,
-                                pointColor: res,
-                                colorMap: res["colorMap"],
-                                opacities: opacities,
-                            });
-                            setColorMap(res["colorMap"]);
-                            delete res["colorMap"];
-                            setPointColors(res);
-                        })
-                } else {
-                    showEmbedding({
-                        embedding: newEmbedding,
-                        pointColor: pointColors,
-                        colorMap: colorMap,
-                        opacities: opacities,
-                    });
+            if (pointColors["group"] === "quality") {
+                // pointColor was quality of old embedding ... recompute
+                const res = await getPointColors(newEmbeddingName, selectedPointColor, setBackendStatus, selectedMetric);
+                
+                if ("none" in res["colorMap"]) {
+                    setSelectedPointColor("none");
+                    setPointColorScaling(1.0);
                 }
-            })
+                
+                await showEmbedding({
+                    embedding: newEmbedding,
+                    pointColor: res,
+                    colorMap: res["colorMap"],
+                    opacities: opacities,
+                });
+                
+                setColorMap(res["colorMap"]);
+                delete res["colorMap"];
+                setPointColors(res);
+            } else {
+                await showEmbedding({
+                    embedding: newEmbedding,
+                    pointColor: pointColors,
+                    colorMap: colorMap,
+                    opacities: opacities,
+                });
+            }
+        } catch (error) {
+            console.error('Error in handleEmbeddingSelect:', error);
+        }
     }
 
     useEffect(() => {
@@ -584,6 +587,8 @@ export default function Scatterplot() {
                 pointSize: pointSize,
                 useTransition: false,
                 preventFilterReset: false
+            }).catch(error => {
+                console.error('Error in initial embedding draw:', error);
             });
             subscribePointSelection();
             scatterplot.deselect();
@@ -621,8 +626,13 @@ export default function Scatterplot() {
     } else {
         return (
             <>
-                <div className="flex-grow h-screen max-h-screen bg-white relative min-w-[400px]">
-                    <CanvasWrapper setScatterLoaded={setScatterLoaded} setScatterplot={setScatterplot} />
+                <div className="flex-grow h-full max-h-full bg-white relative min-w-[400px]">
+                    <div className="w-full h-full">
+                        <CanvasWrapper 
+                            setScatterLoaded={setScatterLoaded} 
+                            setScatterplot={setScatterplot}
+                        />
+                    </div>
                     <div className="absolute w-full flex flex-wrap top-0 pt-1 px-1 items-center display-block justify-between">
                         <div className="flex items-left">
                             <ScreenshotButton onClick={() => saveAsPng(scatterplot, `${datasetName}_${embeddingName}_scatter.png`)} />
