@@ -5,20 +5,16 @@ export const RangeFilter = ({
   title, 
   onRangeChange, 
   minValue,
-  maxValue
+  maxValue,
+  fullRangeMin,
+  fullRangeMax
 }) => {
   const [isDragging, setIsDragging] = useState(null); // 'min', 'max', or null
   const sliderRef = useRef(null);
 
-  // Calculate the actual min and max from the feature values
-  const { actualMin, actualMax } = useMemo(() => {
-    if (!featureValues || featureValues.length === 0) {
-      return { actualMin: 0, actualMax: 1 };
-    }
-    const min = Math.min(...featureValues);
-    const max = Math.max(...featureValues);
-    return { actualMin: min, actualMax: max };
-  }, [featureValues]);
+  // Use provided full range or calculate from feature values as fallback
+  const actualMin = fullRangeMin !== undefined ? fullRangeMin : (featureValues && featureValues.length > 0 ? Math.min(...featureValues) : 0);
+  const actualMax = fullRangeMax !== undefined ? fullRangeMax : (featureValues && featureValues.length > 0 ? Math.max(...featureValues) : 1);
 
   const getPercentage = (value) => {
     if (actualMax === actualMin) return 0;
@@ -67,7 +63,7 @@ export const RangeFilter = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, minValue, maxValue, actualMin, actualMax]);
+  }, [isDragging]);
 
   // Format the numbers for display
   const formatNumber = (num) => {

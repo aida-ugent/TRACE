@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { ReactSelect, SavePointForm } from "./utils";
 import { SettingsButton, ChevronRightButton, AsyncButton, DefaultButton } from "./buttons";
 import { Switch } from '@headlessui/react'
@@ -150,23 +150,25 @@ export function SettingsMenu(props) {
   const [rangeFilterMin, setRangeFilterMin] = useState(null);
   const [rangeFilterMax, setRangeFilterMax] = useState(null);
 
-  // Calculate the full range from feature values for reset purposes
-  const { fullRangeMin, fullRangeMax } = useMemo(() => {
-    if (!pointColors || !pointColors.values || pointColors.values.length === 0) {
-      return { fullRangeMin: 0, fullRangeMax: 1 };
-    }
-    const min = Math.min(...pointColors.values);
-    const max = Math.max(...pointColors.values);
-    return { fullRangeMin: min, fullRangeMax: max };
-  }, [pointColors]);
-
-  // Initialize range filter to full range when data loads
+  // Initialize range filter to full range when pointColors changes
   useEffect(() => {
-    if (rangeFilterMin === null && rangeFilterMax === null && fullRangeMin !== undefined && fullRangeMax !== undefined) {
-      setRangeFilterMin(fullRangeMin);
-      setRangeFilterMax(fullRangeMax);
+    if (pointColors && pointColors["type"] === "continuous" && pointColors.values && pointColors.values.length > 0) {
+      // Calculate min/max directly here
+      const numericValues = pointColors.values.filter(val => typeof val === 'number' && !isNaN(val));
+      if (numericValues.length > 0) {
+        const min = Math.min(...numericValues);
+        const max = Math.max(...numericValues);
+        if (isFinite(min) && isFinite(max) && min !== max) {
+          setRangeFilterMin(min);
+          setRangeFilterMax(max);
+        }
+      }
+    } else {
+      // Reset for non-continuous data
+      setRangeFilterMin(null);
+      setRangeFilterMax(null);
     }
-  }, [rangeFilterMin, rangeFilterMax, fullRangeMin, fullRangeMax]);
+  }, [pointColors]);
 
   const toggleVisibility = () => {
     if (visibility == "visible") setVisibility("hidden"); else setVisibility("visible");
@@ -183,25 +185,43 @@ export function SettingsMenu(props) {
 
   // Reset range filter values when reset trigger changes
   useEffect(() => {
-    setRangeFilterMin(fullRangeMin);
-    setRangeFilterMax(fullRangeMax);
-    // Also call the parent handler to clear any applied filters
-    handleRangeFilterChange(null, null);
+    if (pointColors && pointColors["type"] === "continuous" && rangeFilterResetTrigger) {
+      // Calculate fresh min/max values
+      const numericValues = pointColors.values.filter(val => typeof val === 'number' && !isNaN(val));
+      if (numericValues.length > 0) {
+        const min = Math.min(...numericValues);
+        const max = Math.max(...numericValues);
+        if (isFinite(min) && isFinite(max) && min !== max) {
+          setRangeFilterMin(min);
+          setRangeFilterMax(max);
+          // Also call the parent handler to clear any applied filters
+          handleRangeFilterChange(null, null);
+        }
+      }
+    }
   }, [rangeFilterResetTrigger]);
 
   // Local range filter handler that stores values and calls parent
   const handleRangeChange = (minVal, maxVal) => {
+    // Only handle range changes for continuous data
+    if (!pointColors || pointColors["type"] !== "continuous") {
+      return;
+    }
+    
     setRangeFilterMin(minVal);
     setRangeFilterMax(maxVal);
     
-    // Apply filtering logic here
-    const isMinFiltered = minVal > fullRangeMin;
-    const isMaxFiltered = maxVal < fullRangeMax;
-    
-    if (isMinFiltered || isMaxFiltered) {
-      handleRangeFilterChange(isMinFiltered ? minVal : null, isMaxFiltered ? maxVal : null);
-    } else {
-      handleRangeFilterChange(null, null);
+    // Calculate full range for comparison
+    const numericValues = pointColors.values.filter(val => typeof val === 'number' && !isNaN(val));
+    if (numericValues.length > 0) {
+      const isMinFiltered = minVal > rangeFilterMin;
+      const isMaxFiltered = maxVal < rangeFilterMax;
+      
+      if (isMinFiltered || isMaxFiltered) {
+        handleRangeFilterChange(isMinFiltered ? minVal : null, isMaxFiltered ? maxVal : null);
+      } else {
+        handleRangeFilterChange(null, null);
+      }
     }
   };
 
@@ -400,6 +420,8 @@ export function SettingsMenu(props) {
                           onRangeChange={handleRangeChange}
                           minValue={rangeFilterMin}
                           maxValue={rangeFilterMax}
+                          fullRangeMin={rangeFilterMin}
+                          fullRangeMax={rangeFilterMax}
                         />
                       </div>
                     </div>
