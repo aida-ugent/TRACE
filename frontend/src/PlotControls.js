@@ -149,27 +149,37 @@ export function SettingsMenu(props) {
   const [unstablePointFraction, setUnstablePointFraction] = useState(0.1);
   
   // Range filter state - persists across tab switches
+  // Current filter values (slider handles)
   const [rangeFilterMin, setRangeFilterMin] = useState(null);
   const [rangeFilterMax, setRangeFilterMax] = useState(null);
+
+  // Maximal range (min/max of all values)
+  const [maximalRangeMin, setMaximalRangeMin] = useState(null);
+  const [maximalRangeMax, setMaximalRangeMax] = useState(null);
 
   // Initialize range filter to full range when pointColors changes
   useEffect(() => {
     if (pointColors && pointColors["type"] === "continuous" && pointColors.values && pointColors.values.length > 0) {
-      // Calculate min/max directly here
+      // Calculate maximal range
       const numericValues = pointColors.values.filter(val => typeof val === 'number' && !isNaN(val));
       if (numericValues.length > 0) {
         const min = Math.min(...numericValues);
         const max = Math.max(...numericValues);
         if (isFinite(min) && isFinite(max) && min !== max) {
+          setMaximalRangeMin(min);
+          setMaximalRangeMax(max);
           setRangeFilterMin(min);
           setRangeFilterMax(max);
         }
       }
     } else {
       // Reset for non-continuous data
+      setMaximalRangeMin(null);
+      setMaximalRangeMax(null);
       setRangeFilterMin(null);
       setRangeFilterMax(null);
     }
+    handleRangeFilterChange(null, null);
   }, [pointColors]);
 
   const toggleVisibility = () => {
@@ -183,25 +193,7 @@ export function SettingsMenu(props) {
       console.log(`canvas width: ${width}, height: ${height}`)
       //scatterplot.set({ width, height });
     }
-  }, [visibility])
-
-  // Reset range filter values when reset trigger changes
-  useEffect(() => {
-    if (pointColors && pointColors["type"] === "continuous" && rangeFilterResetTrigger) {
-      // Calculate fresh min/max values
-      const numericValues = pointColors.values.filter(val => typeof val === 'number' && !isNaN(val));
-      if (numericValues.length > 0) {
-        const min = Math.min(...numericValues);
-        const max = Math.max(...numericValues);
-        if (isFinite(min) && isFinite(max) && min !== max) {
-          setRangeFilterMin(min);
-          setRangeFilterMax(max);
-          // Also call the parent handler to clear any applied filters
-          handleRangeFilterChange(null, null);
-        }
-      }
-    }
-  }, [rangeFilterResetTrigger]);
+  }, [visibility]);
 
   // Local range filter handler that stores values and calls parent
   const handleRangeChange = (minVal, maxVal) => {
@@ -209,21 +201,15 @@ export function SettingsMenu(props) {
     if (!pointColors || pointColors["type"] !== "continuous") {
       return;
     }
-    
     setRangeFilterMin(minVal);
     setRangeFilterMax(maxVal);
-    
-    // Calculate full range for comparison
-    const numericValues = pointColors.values.filter(val => typeof val === 'number' && !isNaN(val));
-    if (numericValues.length > 0) {
-      const isMinFiltered = minVal > rangeFilterMin;
-      const isMaxFiltered = maxVal < rangeFilterMax;
-      
-      if (isMinFiltered || isMaxFiltered) {
-        handleRangeFilterChange(isMinFiltered ? minVal : null, isMaxFiltered ? maxVal : null);
-      } else {
-        handleRangeFilterChange(null, null);
-      }
+    // Compare to maximal range
+    const isMinFiltered = (minVal !== null && maximalRangeMin !== null) ? minVal > maximalRangeMin : false;
+    const isMaxFiltered = (maxVal !== null && maximalRangeMax !== null) ? maxVal < maximalRangeMax : false;
+    if (isMinFiltered || isMaxFiltered) {
+      handleRangeFilterChange(isMinFiltered ? minVal : null, isMaxFiltered ? maxVal : null);
+    } else {
+      handleRangeFilterChange(null, null);
     }
   };
 
@@ -377,8 +363,8 @@ export function SettingsMenu(props) {
                           onRangeChange={handleRangeChange}
                           minValue={rangeFilterMin}
                           maxValue={rangeFilterMax}
-                          fullRangeMin={rangeFilterMin}
-                          fullRangeMax={rangeFilterMax}
+                          fullRangeMin={maximalRangeMin}
+                          fullRangeMax={maximalRangeMax}
                         />
                       </div>
                     </div>

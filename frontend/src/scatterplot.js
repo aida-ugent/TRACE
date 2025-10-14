@@ -105,7 +105,7 @@ const applyRangeFilter = (featureValues, minVal, maxVal) => {
     const hiddenLength = featureValues.length - show.length;
     filteredPoints = show;
     scatterplot.filter(show);
-    console.log(`Range filter: showing ${show.length} points, hiding ${hiddenLength} points`);
+    //console.log(`Range filter: showing ${show.length} points, hiding ${hiddenLength} points`);
 }
 
 const getPointColors = (embName, featureName, setBackendStatus = () => { }, selectedMetric) => {
