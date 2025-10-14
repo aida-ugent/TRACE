@@ -136,12 +136,14 @@ export function SettingsMenu(props) {
     hoverNeighborsEnabled,
     setHoverNeighborsEnabled,
     selectedPoints,
+    opacityByDensity,
+    toggleOpacityByDensity,
+    opacity,
+    handleOpacitySelect,
     children } = props
 
   const [visibility, setVisibility] = useState('visible')
   const [unstablePointFraction, setUnstablePointFraction] = useState(0.1);
-  const [opacityByDensity, setOpacityByDensity] = useState(true);
-  const [opacity, setOpacity] = useState({ 'slider': 0.2, 'value': scaleOpacity(0.2) });
 
   const toggleVisibility = () => {
     if (visibility == "visible") setVisibility("hidden"); else setVisibility("visible");
@@ -155,32 +157,6 @@ export function SettingsMenu(props) {
       //scatterplot.set({ width, height });
     }
   }, [visibility])
-
-  const toggleOpacityByDensity = (byDensity) => {
-    setOpacityByDensity(byDensity);
-
-    if (scatterplot !== null) {
-      if (byDensity) {
-        if (scatterplot.get('opacityBy') !== 'valueW') {
-          scatterplot.set({
-            "opacityBy": "density",
-          })
-        }
-      } else {
-        if (scatterplot.get('opacityBy') === 'valueW') {
-          scatterplot.set({
-            opacityBy: 'w',
-            opacity: [opacity['value'], 1],
-          })
-        } else {
-          scatterplot.set({
-            opacityBy: null,
-            opacity: opacity['value'],
-          })
-        }
-      }
-    }
-  }
 
   const handlePointSizeSelect = (pointSize) => {
     setPointSize(pointSize);
@@ -196,25 +172,6 @@ export function SettingsMenu(props) {
       setLegendVisibility("hidden")
     } else {
       setLegendVisibility("visible")
-    }
-  }
-
-  const handleOpacitySelect = (newOpacity) => {
-    newOpacity = Math.max(0, Math.min(newOpacity, 1));
-
-    const scaledOpacity = scaleOpacity(newOpacity);
-    setOpacity({ 'slider': newOpacity, 'value': scaledOpacity });
-
-    if (scatterplot.get('opacityBy') == 'valueW') {
-      scatterplot.set({
-        opacityBy: 'w',
-        opacity: [scaledOpacity, 1],
-      })
-    } else {
-      scatterplot.set({
-        opacityBy: null,
-        opacity: scaledOpacity,
-      })
     }
   }
 
