@@ -22,10 +22,8 @@ const resetZoomHandler = () => {
         });
 }
 
-const resetOpacityHandler = () => {
-    scatterplot.set({
-        opacityBy: 'density',
-    })
+const scaleOpacity = (sliderValue) => {
+    return Math.pow(sliderValue, 3);
 }
 
 const zoomToSelectionHandler = (opacities) => {
@@ -246,6 +244,8 @@ export default function Scatterplot() {
     const [metricOptions, setMetricOptions] = useState([]);
     const [maxNeighbors, setMaxNeighbors] = useState(0);
     const [datasetName, setDatasetName] = useState(null);
+    const [opacityByDensity, setOpacityByDensity] = useState(true);
+    const [opacity, setOpacity] = useState({ 'slider': 0.2, 'value': scaleOpacity(0.2) });
 
     // hover over points to show HD neighbors
     const [hoverNeighborsEnabled, setHoverNeighborsEnabled] = useState(false);
@@ -362,6 +362,10 @@ export default function Scatterplot() {
                                 setSelectedPointColor(newSelectedPointColor);
                                 console.log(newPointColorOptions)
 
+                                // reset point opacities
+                                setOpacityByDensity(true);
+                                setOpacity({ 'slider': 0.2, 'value': scaleOpacity(0.2) });
+
                                 newEmbeddingName = flattenGroupedOptions(res["embedding_options"])[0];
                                 setEmbeddingName(newEmbeddingName);
 
@@ -455,6 +459,52 @@ export default function Scatterplot() {
         scatterplot.set({ opacityBy: 'density' });
     }
 
+    // ##### Opacity Management ############
+    const toggleOpacityByDensity = (byDensity) => {
+        setOpacityByDensity(byDensity);
+
+        if (scatterplot !== null) {
+            if (byDensity) {
+                if (scatterplot.get('opacityBy') !== 'valueW') {
+                    scatterplot.set({
+                        "opacityBy": "density",
+                    })
+                }
+            } else {
+                if (scatterplot.get('opacityBy') === 'valueW') {
+                    scatterplot.set({
+                        opacityBy: 'w',
+                        opacity: [opacity['value'], 1],
+                    })
+                } else {
+                    scatterplot.set({
+                        opacityBy: null,
+                        opacity: opacity['value'],
+                    })
+                }
+            }
+        }
+    }
+
+    const handleOpacitySelect = (newOpacity) => {
+        newOpacity = Math.max(0, Math.min(newOpacity, 1));
+
+        const scaledOpacity = scaleOpacity(newOpacity);
+        setOpacity({ 'slider': newOpacity, 'value': scaledOpacity });
+
+        if (scatterplot.get('opacityBy') == 'valueW') {
+            scatterplot.set({
+                opacityBy: 'w',
+                opacity: [scaledOpacity, 1],
+            })
+        } else {
+            scatterplot.set({
+                opacityBy: null,
+                opacity: scaledOpacity,
+            })
+        }
+    }
+
     const subscribeNeighborHover = () => {
         clearTimeout(timeOutHover);
         if (hoverNeighborsEnabled) {
@@ -531,19 +581,19 @@ export default function Scatterplot() {
             if (pointColors["group"] === "quality") {
                 // pointColor was quality of old embedding ... recompute
                 const res = await getPointColors(newEmbeddingName, selectedPointColor, setBackendStatus, selectedMetric);
-                
+
                 if ("none" in res["colorMap"]) {
                     setSelectedPointColor("none");
                     setPointColorScaling(1.0);
                 }
-                
+
                 await showEmbedding({
                     embedding: newEmbedding,
                     pointColor: res,
                     colorMap: res["colorMap"],
                     opacities: opacities,
                 });
-                
+
                 setColorMap(res["colorMap"]);
                 delete res["colorMap"];
                 setPointColors(res);
@@ -590,13 +640,15 @@ export default function Scatterplot() {
                 opacities: opacities,
                 pointSize: pointSize,
                 useTransition: false,
-                preventFilterReset: false
+                preventFilterReset: false,
+                opacityBy: "density",
+            }).then(() => {
+                subscribePointSelection();
+                scatterplot.deselect();
+                resetZoomHandler();
             }).catch(error => {
                 console.error('Error in initial embedding draw:', error);
             });
-            subscribePointSelection();
-            scatterplot.deselect();
-            resetOpacityHandler();
         }
     }, [scatterLoaded, isLoading, isLoadingData]);
 
@@ -632,8 +684,8 @@ export default function Scatterplot() {
             <>
                 <div className="flex-grow h-full max-h-full bg-white relative min-w-[400px]">
                     <div className="w-full h-full">
-                        <CanvasWrapper 
-                            setScatterLoaded={setScatterLoaded} 
+                        <CanvasWrapper
+                            setScatterLoaded={setScatterLoaded}
                             setScatterplot={setScatterplot}
                         />
                     </div>
@@ -684,7 +736,13 @@ export default function Scatterplot() {
                             <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill" />
                         </svg>
                     </div>
-                    <SelectionInfo scatterplot={scatterplotState} numPoints={numPoints} datasetInfo={datasetInfo} />
+                    <SelectionInfo
+                        scatterplot={scatterplotState}
+                        numPoints={numPoints}
+                        datasetInfo={datasetInfo}
+                        opacityByDensity={opacityByDensity}
+                        opacity={opacity}
+                    />
                 </div>
                 <div className="fixed bottom-0 left-0 flex-wrap flex-row m-2 max-h-[90%] overflow-auto">
                     {
@@ -728,6 +786,10 @@ export default function Scatterplot() {
                     hoverNeighborsEnabled={hoverNeighborsEnabled}
                     setHoverNeighborsEnabled={setHoverNeighborsEnabled}
                     selectedPoints={selectedPoints}
+                    opacityByDensity={opacityByDensity}
+                    toggleOpacityByDensity={toggleOpacityByDensity}
+                    opacity={opacity}
+                    handleOpacitySelect={handleOpacitySelect}
                 >
                     {/* Dataset */}
                     <div className="flex flex-col items-left my-2 justify-between">
