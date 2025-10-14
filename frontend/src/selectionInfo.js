@@ -1,37 +1,58 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Tooltip } from 'react-tooltip';
 
 
 // https://tailwindcomponents.com/component/profile-information-card-horizon-ui-tailwind
 export default function SelectionInfo(props) {
-    const { scatterplot, numPoints, datasetInfo } = props;
+    const { scatterplot, numPoints, datasetInfo, opacityByDensity, opacity } = props;
 
     const [numSelected, setNumSelected] = useState(0);
+    
+    // Use refs to store current values to avoid recreating callbacks
+    const opacityRef = useRef(opacity);
+    const opacityByDensityRef = useRef(opacityByDensity);
+    
+    // Update refs when props change
+    opacityRef.current = opacity;
+    opacityByDensityRef.current = opacityByDensity;
+    
+    const onSelect = useCallback((points) => {
+        if (points["points"].length > 0) {
+            setNumSelected(points["points"].length)
+        }
+    }, []);
+
+    const onDeselect = useCallback(() => {
+        setNumSelected(0)
+        // only reset opacity if we showed the high dimensional neighbors
+        if (scatterplot.get('opacityBy') === 'valueW') {            
+            if (opacityByDensityRef.current) {
+                scatterplot.set({
+                    opacityBy: 'density',
+                })
+            } else {
+                scatterplot.set({
+                    opacityBy: null,
+                    opacity: opacityRef.current['value'],
+                })
+            }
+        }
+    }, [scatterplot]); 
+
     useEffect(() => {
         if (scatterplot != null) {
-            console.log("subscribing to select action");
             scatterplot.subscribe('select', onSelect);
             scatterplot.subscribe('deselect', onDeselect);
+            
+            // Cleanup function to unsubscribe when component unmounts
+            return () => {
+                scatterplot.unsubscribe('select', onSelect);
+                scatterplot.unsubscribe('deselect', onDeselect);
+            };
         } else {
             console.log("Info: scatterplot is null");
         }
     }, [scatterplot]);
-
-    const onSelect = (points) => {
-        if (points["points"].length > 0) {
-            setNumSelected(points["points"].length)
-        }
-    }
-
-    const onDeselect = () => {
-        let cview = scatterplot.get('cameraView');
-        setNumSelected(0)
-        scatterplot.set({
-            opacityBy: 'density',
-            cameraView: cview,
-        })
-        scatterplot.refresh()
-    }
 
     return (
         <div className="select-none absolute bottom-2 right-2 w-fit bg-white/80 p-1 flex text-sm"
