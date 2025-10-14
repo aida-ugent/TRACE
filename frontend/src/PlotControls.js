@@ -161,17 +161,21 @@ export function SettingsMenu(props) {
   useEffect(() => {
     if (pointColors && pointColors["type"] === "continuous" && pointColors.values && pointColors.values.length > 0) {
       // Calculate maximal range
-      const numericValues = pointColors.values.filter(val => typeof val === 'number' && !isNaN(val));
-      if (numericValues.length > 0) {
-        const min = Math.min(...numericValues);
-        const max = Math.max(...numericValues);
-        if (isFinite(min) && isFinite(max) && min !== max) {
-          setMaximalRangeMin(min);
-          setMaximalRangeMax(max);
-          setRangeFilterMin(min);
-          setRangeFilterMax(max);
+        const numericValues = pointColors.values.filter(val => typeof val === 'number' && !isNaN(val));
+        if (numericValues.length > 0) {
+          let min = numericValues[0];
+          let max = numericValues[0];
+          for (let i = 1; i < numericValues.length; i++) {
+            if (numericValues[i] < min) min = numericValues[i];
+            if (numericValues[i] > max) max = numericValues[i];
+          }
+          if (isFinite(min) && isFinite(max) && min !== max) {
+            setMaximalRangeMin(min);
+            setMaximalRangeMax(max);
+            setRangeFilterMin(min);
+            setRangeFilterMax(max);
+          }
         }
-      }
     } else {
       // Reset for non-continuous data
       setMaximalRangeMin(null);
